@@ -1,7 +1,7 @@
 
 var client = (function($) {
 
-    var _baseRestPath = '/hipstagram/rest';
+    var _baseRestPath = '/hipstacaster/rest';
 
 
     function _getPopularAlbums() {
@@ -9,8 +9,7 @@ var client = (function($) {
             type: 'GET',
             url: _baseRestPath +'/albums/popular',
             dataType: 'json',
-            async: false,
-            cache: false
+            async: false
         });
     }
 
@@ -18,6 +17,16 @@ var client = (function($) {
         return $.ajax({
             type: 'GET',
             url: _baseRestPath +'/photos/' + photoId,
+            dataType: 'json',
+            async: false,
+            cache: false
+        });
+    }
+
+    function _getPhotosOfAlbum(albumId) {
+        return $.ajax({
+            type: 'GET',
+            url: _baseRestPath +'/albums/' + albumId + '/photos',
             dataType: 'json',
             async: false,
             cache: false
@@ -32,6 +41,10 @@ var client = (function($) {
 
         getPhoto : function(photoId) {
             return JSON.parse(_getPhoto(photoId).responseText);
+        },
+
+        getPhotosOfAlbum : function(albumId) {
+            return JSON.parse(_getPhotosOfAlbum(albumId).responseText);
         }
     };
 })(jQuery);

@@ -55,12 +55,9 @@ public class RestEndpoint {
     @Path("/albums/{albumId}/photos")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getPhotosOfAlbum(@PathParam("albumId") String albumId) throws HipstaException {
-        PhotoList<Photo> photoList = flickrController.getPhotosOfAlbum(albumId);
-        List<TinyPhotoDTO> l = new ArrayList<>();
-        for(Photo p : photoList) {
-            l.add(new TinyPhotoDTO(p));
-        }
-        return Response.ok(l).build();
+        List<TinyPhotoDTO> photoList = flickrController.getPhotosOfAlbum(albumId);
+
+        return Response.ok(photoList).build();
     }
 
     @GET

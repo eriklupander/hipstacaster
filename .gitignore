@@ -7,3 +7,4 @@ lib
 .gradle
 *.iml
 *.orig
+apikey
