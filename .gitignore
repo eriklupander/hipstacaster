@@ -1,0 +1,9 @@
+out
+target
+.idea
+build
+.forge_settings
+lib
+.gradle
+*.iml
+*.orig

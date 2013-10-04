@@ -1,0 +1,38 @@
+<html>
+  <link id="favIcon" rel="icon" type="image/png" href="hipstacaster.png"/>
+  <title>HipstaCaster</title>
+  <script src="js/jquery/jquery-1.8.3.min.js"></script>
+  <script src="https://www.gstatic.com/cast/js/receiver/09/cast_receiver.js"></script>
+  <script src="js/client.js"></script>
+  <script src="js/flickr.js"></script>
+  <script src="js/hipstacaster.js"></script>
+  <script type="text/javascript">
+
+    window.onload = onLoad;
+
+    /**
+	* Initializes the receiver application and starts the
+	* receiver.
+	*/
+    function onLoad() {
+      
+      var chromecastApp = new cast.receiver.Receiver("HipstaCaster",
+          [ cast.HipstaCaster.PROTOCOL ], "", 5);
+      var favIcon = document.getElementById("favIcon");
+
+      
+      var hipstacaster = new cast.HipstaCaster();
+      hipstacaster.mChannelHandler.addChannelFactory(
+          chromecastApp.createChannelFactory(cast.HipstaCaster.PROTOCOL));
+      chromecastApp.start();
+        $('body').html('<div>Im blinking!!</div>');
+        flickr.demo();
+    }
+
+  </script>
+
+<body>
+
+</body>
+  
+</html>
