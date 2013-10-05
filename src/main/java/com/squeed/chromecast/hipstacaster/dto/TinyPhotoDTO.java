@@ -17,12 +17,10 @@ public class TinyPhotoDTO implements Serializable {
     private String title;
     private String ownerName;
 
+    private String smallsizeUrl;
     private String thumbnailUrl;
     private String fullsizeUrl;
     private String squareUrl;
-
-    private String nextPhotoId;
-    private String prevPhotoId;
 
     public TinyPhotoDTO() {}
 
@@ -31,6 +29,13 @@ public class TinyPhotoDTO implements Serializable {
         this.url = photo.getUrl();
         this.id = photo.getId();
         this.ownerName = photo.getOwner().getRealName() != null ? photo.getOwner().getRealName() : photo.getOwner().getUsername();
+
+        if(photo.getSmallSize() != null) {
+            this.setThumbnailUrl(photo.getThumbnailSize().getSource());
+            this.setSmallsizeUrl(photo.getSmallSize().getSource());
+            this.setFullsizeUrl(photo.getOriginalSize().getSource());
+            this.setSquareUrl(photo.getSquareSize().getSource());
+        }
     }
 
     public String getId() {
@@ -39,6 +44,14 @@ public class TinyPhotoDTO implements Serializable {
 
     public String getUrl() {
         return url;
+    }
+
+    public String getSmallsizeUrl() {
+        return smallsizeUrl;
+    }
+
+    public void setSmallsizeUrl(String smallsizeUrl) {
+        this.smallsizeUrl = smallsizeUrl;
     }
 
     public String getTitle() {
@@ -79,22 +92,6 @@ public class TinyPhotoDTO implements Serializable {
 
     public void setOwnerName(String ownerName) {
         this.ownerName = ownerName;
-    }
-
-    public String getNextPhotoId() {
-        return nextPhotoId;
-    }
-
-    public void setNextPhotoId(String nextPhotoId) {
-        this.nextPhotoId = nextPhotoId;
-    }
-
-    public String getPrevPhotoId() {
-        return prevPhotoId;
-    }
-
-    public void setPrevPhotoId(String prevPhotoId) {
-        this.prevPhotoId = prevPhotoId;
     }
 
     public String getSquareUrl() {

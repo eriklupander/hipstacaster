@@ -36,6 +36,14 @@ public class RestEndpoint {
     FlickrController flickrController;
 
     @GET
+    @Path("/photos/search/{tags}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response search(@PathParam("tags") String tags) throws HipstaException {
+        List<TinyPhotoDTO> l = flickrController.search(tags);
+        return Response.ok(l).build();
+    }
+
+    @GET
     @Path("/albums/popular")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getPopularAlbums() throws HipstaException {

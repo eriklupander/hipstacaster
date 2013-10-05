@@ -2,10 +2,15 @@ package com.squeed.chromecast.hipstacaster;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-
 import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.content.res.TypedArray;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.MediaRouteActionProvider;
@@ -14,10 +19,20 @@ import android.support.v7.media.MediaRouter;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.TextView;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.GridView;
+import android.widget.Toast;
 import com.google.cast.*;
+import com.squeed.chromecast.hipstacaster.dto.Photo;
+import com.squeed.chromecast.hipstacaster.grid.GridViewAdapter;
+import com.squeed.chromecast.hipstacaster.grid.ImageItem;
+import com.squeed.chromecast.hipstacaster.img.DrawableManager;
+import com.squeed.chromecast.hipstacaster.rest.RestClient;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class HipstaActivity extends Activity implements MediaRouteAdapter {
 
@@ -30,7 +45,10 @@ public class HipstaActivity extends Activity implements MediaRouteAdapter {
     private CustomHipstaCasterStream mMessageStream;
 
 
-    private TextView mInfoView;
+    private GridView gridView;
+    private GridViewAdapter customGridAdapter;
+
+
 
     private CastContext mCastContext;
     private CastDevice mSelectedDevice;
@@ -38,11 +56,31 @@ public class HipstaActivity extends Activity implements MediaRouteAdapter {
     private MediaRouteSelector mMediaRouteSelector;
     private MediaRouter.Callback mMediaRouterCallback;
 
+    private RestClient restClient;
+    private DrawableManager drawableManager;
+
 
     @Override
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         setContentView(R.layout.main);
+
+        restClient = new RestClient();
+        drawableManager = new DrawableManager();
+
+        gridView = (GridView) findViewById(R.id.gridView);
+        customGridAdapter = new GridViewAdapter(this, R.layout.row_grid, getData());
+        gridView.setAdapter(customGridAdapter);
+        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View v,
+                                    int position, long id) {
+                Toast.makeText(HipstaActivity.this, position + "#Selected",
+                        Toast.LENGTH_SHORT).show();
+            }
+
+        });
+
+
 
         mSessionListener = new SessionListener();
         mMessageStream = new CustomHipstaCasterStream();
@@ -53,6 +91,31 @@ public class HipstaActivity extends Activity implements MediaRouteAdapter {
         mMediaRouteSelector = MediaRouteHelper.buildMediaRouteSelector(
                 MediaRouteHelper.CATEGORY_CAST, APP_NAME, null);
         mMediaRouterCallback = new MediaRouterCallback();
+    }
+
+    private ArrayList getData() {
+        final ArrayList imageItems = new ArrayList();
+
+        List<Photo> searchResult = restClient.search("sarek,narvik");
+        for(Photo p : searchResult) {
+            Drawable drawable = drawableManager.fetchDrawable(p.getSquareUrl());
+            imageItems.add(new ImageItem(drawableToBitmap(drawable), p.getOwnerName()));
+        }
+
+        return imageItems;
+    }
+
+    private Bitmap drawableToBitmap (Drawable drawable) {
+        if (drawable instanceof BitmapDrawable) {
+            return ((BitmapDrawable)drawable).getBitmap();
+        }
+
+        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+
+        return bitmap;
     }
 
     /**
@@ -156,7 +219,6 @@ public class HipstaActivity extends Activity implements MediaRouteAdapter {
             }
         } else {
             endSession();
-            mInfoView.setText("Select Device");
         }
     }
 
@@ -187,7 +249,6 @@ public class HipstaActivity extends Activity implements MediaRouteAdapter {
         public void onSessionStarted(ApplicationMetadata appMetadata) {
             sLog.d("SessionListener.onStarted");
 
-            mInfoView.setText("Waiting...");
             ApplicationChannel channel = mSession.getChannel();
             if (channel == null) {
                 Log.w(TAG, "onStarted: channel is null");
@@ -220,9 +281,6 @@ public class HipstaActivity extends Activity implements MediaRouteAdapter {
          */
         @Override
         protected void onError(String errorMessage) {
-
-            mInfoView.setText(errorMessage);
-
 
             new AlertDialog.Builder(HipstaActivity.this)
                     .setTitle("Error")

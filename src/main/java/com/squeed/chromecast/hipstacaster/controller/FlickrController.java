@@ -7,6 +7,8 @@ import java.util.List;
 
 import javax.annotation.PostConstruct;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.flickr4java.flickr.Flickr;
@@ -34,13 +36,25 @@ import com.squeed.chromecast.hipstacaster.exception.HipstaException;
 @Component
 public class FlickrController {
 
-    private String apiKey = "zzz";
+    Logger log = LoggerFactory.getLogger(FlickrController.class);
+
+    private String apiKey = "xxx";
     private String sharedSecret = "yyy";
 
     private Flickr f;
 
     private PhotosInterface photoInterface;
     private GalleriesInterface galleriesInterface;
+
+    private static final HashSet<String> extras = new HashSet<>();
+    {
+        extras.add("url_t");
+        extras.add("url_s");
+        extras.add("url_m");
+        extras.add("url_o");
+        extras.add("url_sq");
+        extras.add("owner_name");
+    }
 
     @PostConstruct
     public void init() {
@@ -50,6 +64,33 @@ public class FlickrController {
 
         photoInterface = f.getPhotosInterface();
         galleriesInterface = f.getGalleriesInterface();
+    }
+
+
+    public List<TinyPhotoDTO> search(String tags) throws HipstaException {
+        List<TinyPhotoDTO> list = new ArrayList<>();
+        SearchParameters params = new SearchParameters();
+        params.setTags(toArray(tags));
+        params.setExtras(extras);
+
+        try {
+            long start = System.currentTimeMillis();
+            PhotoList<Photo> searchResult = photoInterface.search(params, 20, 0);
+            log.info("Reading 20 photos over interface took {} ms", (System.currentTimeMillis() - start));
+            start = System.currentTimeMillis();
+            toTinyPhotoDTOs(list, searchResult);
+            log.info("Reading 20 photosizes over interface took {} ms", (System.currentTimeMillis() - start));
+            return list;
+        } catch (FlickrException e) {
+            throw new HipstaException(e.getMessage());
+        }
+    }
+
+    private String[] toArray(String tags) {
+        if(tags.contains(",")) {
+            return tags.split(",");
+        }
+        return new String[]{tags};
     }
 
     public List<Gallery> getPopularAlbums() throws HipstaException {
@@ -90,24 +131,19 @@ public class FlickrController {
         List<TinyPhotoDTO> list = new ArrayList<>();
         try {
             PhotoList<Photo> photos = galleriesInterface.getPhotos(albumId, new HashSet<String>(), 100, 0);
-            for(int a = 0; a < photos.size(); a++) {
-                TinyPhotoDTO dto = new TinyPhotoDTO(photos.get(a));
-                if(photos.size() > a+1) {
-                    // Add next
-                    dto.setNextPhotoId(photos.get(a+1).getId());
-                }
-
-                if(a > 0) {
-                    // Add prev
-                    dto.setPrevPhotoId(photos.get(a - 1).getId());
-                }
-                fetchAndApplySizes(photos.get(a).getId(), dto);
-                list.add(dto);
-            }
+            toTinyPhotoDTOs(list, photos);
 
             return list;
         } catch (FlickrException e) {
             throw new HipstaException(e.getMessage());
+        }
+    }
+
+    private void toTinyPhotoDTOs(List<TinyPhotoDTO> list, PhotoList<Photo> photos) throws FlickrException {
+        for(int a = 0; a < photos.size(); a++) {
+            TinyPhotoDTO dto = new TinyPhotoDTO(photos.get(a));
+
+            list.add(dto);
         }
     }
 

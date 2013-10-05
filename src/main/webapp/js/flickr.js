@@ -1,56 +1,60 @@
 var flickr = new function() {
 
+    var currentPhotoSet = new Array();
+
     return new function() {
         this.demo = function() {
             $('body').empty();
-            var albums = client.getPopularAlbums();
-            for(var a = 0; a < albums.length; a++) {
-                var album = albums[a];
-                var photo = client.getPhoto(album.primaryPhotoId);
+            var photos = client.search('sarek');
+            currentPhotoSet = photos;
 
-                $('body').append('<div class="album"><div><img id="' + album.id + '" src="' + photo.squareUrl + '"></div><div>' + album.title + '</div></div>');
-
-                (function (_albumId) {
-                    $('#' + album.id).unbind().click(function(){
-                        flickr.loadAlbum(_albumId);
-                    });
-                })(album.id);
-            }
+            flickr.renderCurrentPhotoSet();
         };
-		
-		this.loadAlbum = function(albumId) {
-			var photos = client.getPhotosOfAlbum(albumId);
-			$('body').empty();
-			for(var a = 0; a < photos.length; a++) {
-				var photo = photos[a];
-				$('body').append('<img id="' + photo.id + '" src="' + photo.squareUrl + '">');
 
-                (function (_photoId, _prevId, _nextId) {
+        this.renderCurrentPhotoSet = function() {
+            for(var a = 0; a < currentPhotoSet.length; a++) {
+
+                var photo = currentPhotoSet[a];
+                $('body').append('<div class="album"><div><img id="' + photo.id + '" src="' + photo.squareUrl + '"></div><div class="author-small">' + photo.ownerName + '</div></div>');
+
+                (function (_a) {
                     $('#' + photo.id).unbind().click(function(){
-                        flickr.loadPhoto(_photoId, _prevId, _nextId);
+                        flickr.loadPhoto(_a);
                     });
-                })(photo.id, photo.prevPhotoId, photo.nextPhotoId);
-			}
-		};
+                })(a);
+            }
+        }
+
 		
-		this.loadPhoto = function(photoId, prevPhotoId, nextPhotoId) {
-			var photo = client.getPhoto(photoId);
+		this.loadPhoto = function(index) {
+			var photo = currentPhotoSet[index];
 			$('body').empty();
 			$('body').append('<img id="' + photo.id + '" src="' + photo.fullsizeUrl + '">');
-			$('body').append('<div><button id="prev">Prev</button>');
-			$('body').append('<button id="next">Next</button></div>');
-			
-			$('#next').unbind().click(function() {
-				if(typeof nextPhotoId != 'undefined' && nextPhotoId != null) {
-                    flickr.loadPhoto(nextPhotoId);
-				}
-			});
-			
-			$('#prev').unbind().click(function() {
-				if(typeof prevPhotoId != 'undefined' && prevPhotoId != null) {
-                    flickr.loadPhoto(prevPhotoId);
-				}
-			});
+
+
+
+            if(index < currentPhotoSet.length - 1) {
+                //$('#nextphoto').attr('src', currentPhotoSet[index+1].fullsizeUrl);
+                $('body').append('<button id="next">Next</button></div>');
+                $('#next').unbind().click(function() {
+                    flickr.loadPhoto(++index);
+                });
+            }
+
+
+            if(index > 0) {
+                $('body').append('<div><button id="prev">Prev</button>');
+                $('#prev').unbind().click(function() {
+                    flickr.loadPhoto(--index);
+                });
+            }
+
+            $('body').append('<button id="back">Refresh</button></div>');
+            $('#back').unbind().click(function() {
+                flickr.demo();
+            });
+
+            flickr.renderCurrentPhotoSet();
 		};
 		
     }

@@ -3,6 +3,14 @@ var client = (function($) {
 
     var _baseRestPath = '/hipstacaster/rest';
 
+    function _search(tags) {
+        return $.ajax({
+            type: 'GET',
+            url: _baseRestPath +'/photos/search/' + tags,
+            dataType: 'json',
+            async: false
+        });
+    }
 
     function _getPopularAlbums() {
         return $.ajax({
@@ -35,6 +43,10 @@ var client = (function($) {
 
 
     return {
+        search : function(tags){
+            return JSON.parse(_search(tags).responseText);
+        },
+
         getPopularAlbums : function(){
             return JSON.parse(_getPopularAlbums().responseText);
         },
