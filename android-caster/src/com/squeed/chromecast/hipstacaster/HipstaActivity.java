@@ -12,6 +12,8 @@ import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.MediaRouteActionProvider;
 import android.support.v7.media.MediaRouteSelector;
@@ -22,12 +24,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
+import android.widget.ImageView;
 import android.widget.Toast;
 import com.google.cast.*;
 import com.squeed.chromecast.hipstacaster.dto.Photo;
 import com.squeed.chromecast.hipstacaster.grid.GridViewAdapter;
 import com.squeed.chromecast.hipstacaster.grid.ImageItem;
 import com.squeed.chromecast.hipstacaster.img.DrawableManager;
+import com.squeed.chromecast.hipstacaster.rest.LoadImageListTask;
 import com.squeed.chromecast.hipstacaster.rest.RestClient;
 
 import java.io.IOException;
@@ -56,7 +60,7 @@ public class HipstaActivity extends Activity implements MediaRouteAdapter {
     private MediaRouteSelector mMediaRouteSelector;
     private MediaRouter.Callback mMediaRouterCallback;
 
-    private RestClient restClient;
+
     private DrawableManager drawableManager;
 
 
@@ -64,59 +68,51 @@ public class HipstaActivity extends Activity implements MediaRouteAdapter {
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         setContentView(R.layout.main);
-
-        restClient = new RestClient();
         drawableManager = new DrawableManager();
-
-        gridView = (GridView) findViewById(R.id.gridView);
-        customGridAdapter = new GridViewAdapter(this, R.layout.row_grid, getData());
-        gridView.setAdapter(customGridAdapter);
-        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            public void onItemClick(AdapterView<?> parent, View v,
-                                    int position, long id) {
-                Toast.makeText(HipstaActivity.this, position + "#Selected",
-                        Toast.LENGTH_SHORT).show();
-            }
-
-        });
-
-
 
         mSessionListener = new SessionListener();
         mMessageStream = new CustomHipstaCasterStream();
 
-        mCastContext = new CastContext(getApplicationContext());
-        MediaRouteHelper.registerMinimalMediaRouteProvider(mCastContext, this);
-        mMediaRouter = MediaRouter.getInstance(getApplicationContext());
-        mMediaRouteSelector = MediaRouteHelper.buildMediaRouteSelector(
-                MediaRouteHelper.CATEGORY_CAST, APP_NAME, null);
-        mMediaRouterCallback = new MediaRouterCallback();
+        //mCastContext = new CastContext(getApplicationContext());
+        //MediaRouteHelper.registerMinimalMediaRouteProvider(mCastContext, this);
+//        mMediaRouter = MediaRouter.getInstance(getApplicationContext());
+//        mMediaRouteSelector = MediaRouteHelper.buildMediaRouteSelector(
+//                MediaRouteHelper.CATEGORY_CAST, APP_NAME, null);
+//        mMediaRouterCallback = new MediaRouterCallback();
+
+        new LoadImageListTask(this).execute("sarek");
     }
 
-    private ArrayList getData() {
-        final ArrayList imageItems = new ArrayList();
 
-        List<Photo> searchResult = restClient.search("sarek,narvik");
-        for(Photo p : searchResult) {
-            Drawable drawable = drawableManager.fetchDrawable(p.getSquareUrl());
-            imageItems.add(new ImageItem(drawableToBitmap(drawable), p.getOwnerName()));
+    public void onPhotoListLoaded(List<Photo> list) {
+        ArrayList imageItems = new ArrayList();
+
+
+        for(Photo p : list) {
+            imageItems.add(new ImageItem(drawableManager.drawableToBitmap(getResources().getDrawable(R.drawable.user_placeholder)), p.getOwnerName(), p.getSquareUrl()));
         }
 
-        return imageItems;
-    }
+        gridView = (GridView) findViewById(R.id.gridView);
+        customGridAdapter = new GridViewAdapter(this, R.layout.row_grid, imageItems);
+        gridView.setAdapter(customGridAdapter);
 
-    private Bitmap drawableToBitmap (Drawable drawable) {
-        if (drawable instanceof BitmapDrawable) {
-            return ((BitmapDrawable)drawable).getBitmap();
+        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View v,
+                                    int position, long id) {
+                Toast.makeText(HipstaActivity.this, position + "#ItemClick",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        int index = 0;
+        for(Photo p : list) {
+            drawableManager.fetchDrawableOnThread(p.getSquareUrl(), gridView, index);
+            index++;
         }
-
-        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-        drawable.draw(canvas);
-
-        return bitmap;
     }
+
+
+
 
     /**
      * Called when the options menu is first created.
@@ -126,9 +122,9 @@ public class HipstaActivity extends Activity implements MediaRouteAdapter {
         super.onCreateOptionsMenu(menu);
         getMenuInflater().inflate(R.menu.menu, menu);
         MenuItem mediaRouteMenuItem = menu.findItem(R.id.media_route_menu_item);
-        MediaRouteActionProvider mediaRouteActionProvider =
-                (MediaRouteActionProvider) MenuItemCompat.getActionProvider(mediaRouteMenuItem);
-        mediaRouteActionProvider.setRouteSelector(mMediaRouteSelector);
+ //       MediaRouteActionProvider mediaRouteActionProvider =
+ //               (MediaRouteActionProvider) MenuItemCompat.getActionProvider(mediaRouteMenuItem);
+//        mediaRouteActionProvider.setRouteSelector(mMediaRouteSelector);
         return true;
     }
 
@@ -139,8 +135,8 @@ public class HipstaActivity extends Activity implements MediaRouteAdapter {
     @Override
     protected void onStart() {
         super.onStart();
-        mMediaRouter.addCallback(mMediaRouteSelector, mMediaRouterCallback,
-                MediaRouter.CALLBACK_FLAG_PERFORM_ACTIVE_SCAN);
+//        mMediaRouter.addCallback(mMediaRouteSelector, mMediaRouterCallback,
+//                MediaRouter.CALLBACK_FLAG_PERFORM_ACTIVE_SCAN);
     }
 
     /**
@@ -149,7 +145,7 @@ public class HipstaActivity extends Activity implements MediaRouteAdapter {
     @Override
     protected void onPause() {
         super.onPause();
-        finish();
+        //finish();
     }
 
     /**
@@ -157,8 +153,8 @@ public class HipstaActivity extends Activity implements MediaRouteAdapter {
      */
     @Override
     protected void onStop() {
-        endSession();
-        mMediaRouter.removeCallback(mMediaRouterCallback);
+        //endSession();
+       // mMediaRouter.removeCallback(mMediaRouterCallback);
         super.onStop();
     }
 
@@ -187,8 +183,8 @@ public class HipstaActivity extends Activity implements MediaRouteAdapter {
      */
     @Override
     public void onDestroy() {
-        MediaRouteHelper.unregisterMediaRouteProvider(mCastContext);
-        mCastContext.dispose();
+//        MediaRouteHelper.unregisterMediaRouteProvider(mCastContext);
+  //      mCastContext.dispose();
         mCastContext = null;
         super.onDestroy();
     }
@@ -237,6 +233,7 @@ public class HipstaActivity extends Activity implements MediaRouteAdapter {
         sLog.d("onRouteUnselected: %s", route.getName());
         setSelectedDevice(null);
     }
+
 
 
 

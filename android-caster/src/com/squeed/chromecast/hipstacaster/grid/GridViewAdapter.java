@@ -1,6 +1,5 @@
 package com.squeed.chromecast.hipstacaster.grid;
 
-import java.util.ArrayList;
 import android.app.Activity;
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -10,6 +9,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 import com.squeed.chromecast.hipstacaster.R;
+
+import java.util.ArrayList;
 
 public class GridViewAdapter extends ArrayAdapter {
     private Context context;

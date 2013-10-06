@@ -1,10 +1,15 @@
 package com.squeed.chromecast.hipstacaster.img;
 
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.widget.GridView;
 import android.widget.ImageView;
+import com.squeed.chromecast.hipstacaster.grid.ImageItem;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -56,15 +61,14 @@ public class DrawableManager {
         }
     }
 
-    public void fetchDrawableOnThread(final String urlString, final ImageView imageView) {
-        if (drawableMap.containsKey(urlString)) {
-            imageView.setImageDrawable(drawableMap.get(urlString));
-        }
+    public void fetchDrawableOnThread(final String urlString, final GridView gridView, final int index) {
 
         final Handler handler = new Handler() {
             @Override
             public void handleMessage(Message message) {
-                imageView.setImageDrawable((Drawable) message.obj);
+                ImageItem itemAtPosition = (ImageItem) gridView.getItemAtPosition(index);
+                itemAtPosition.setImage(drawableToBitmap(((Drawable) message.obj)));
+                gridView.invalidateViews();
             }
         };
 
@@ -79,6 +83,20 @@ public class DrawableManager {
         };
         thread.start();
     }
+
+    public Bitmap drawableToBitmap (Drawable drawable) {
+        if (drawable instanceof BitmapDrawable) {
+            return ((BitmapDrawable)drawable).getBitmap();
+        }
+
+        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+
+        return bitmap;
+    }
+
 
     private InputStream fetch(String urlString) throws MalformedURLException, IOException {
         DefaultHttpClient httpClient = new DefaultHttpClient();

@@ -32,9 +32,9 @@ public class RestClient {
         List<Photo> l = new ArrayList<>();
         HttpContext localContext = new BasicHttpContext();
         HttpClient client = new DefaultHttpClient();
-        HttpGet get = new HttpGet(baseUrl + "/search/" + tags);
-        get.setHeader("Content-type", "application/json");
-        get.setHeader("Accepts", "application/json");
+        HttpGet get = new HttpGet(baseUrl + "/photos/search/" + tags);
+        //get.setHeader("Content-type", "application/json");
+        //get.setHeader("Accepts", "application/json");
         try {
             HttpResponse response = client.execute(get,localContext);
 
