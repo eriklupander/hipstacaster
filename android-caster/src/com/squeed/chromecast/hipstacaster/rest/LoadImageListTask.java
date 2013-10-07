@@ -1,11 +1,11 @@
 package com.squeed.chromecast.hipstacaster.rest;
 
+import java.util.List;
+
 import android.os.AsyncTask;
+
 import com.squeed.chromecast.hipstacaster.HipstaActivity;
 import com.squeed.chromecast.hipstacaster.dto.Photo;
-
-import java.net.URL;
-import java.util.List;
 
 /**
  * Created with IntelliJ IDEA.

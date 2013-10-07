@@ -61,13 +61,14 @@ public class DrawableManager {
         }
     }
 
-    public void fetchDrawableOnThread(final String urlString, final GridView gridView, final int index) {
+    public void fetchDrawableOnThread(final String urlString, final GridView gridView, final int index, final Callback callback) {
 
         final Handler handler = new Handler() {
             @Override
             public void handleMessage(Message message) {
                 ImageItem itemAtPosition = (ImageItem) gridView.getItemAtPosition(index);
                 itemAtPosition.setImage(drawableToBitmap(((Drawable) message.obj)));
+                callback.execute();
                 gridView.invalidateViews();
             }
         };

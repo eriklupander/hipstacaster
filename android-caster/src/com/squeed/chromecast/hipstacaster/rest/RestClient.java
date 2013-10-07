@@ -29,7 +29,7 @@ public class RestClient {
     private String baseUrl = "http://192.168.1.128:8080/hipstacaster/rest";
 
     public List<Photo> search(String tags) {
-        List<Photo> l = new ArrayList<>();
+    	ArrayList<Photo> l = new ArrayList<Photo>();
         HttpContext localContext = new BasicHttpContext();
         HttpClient client = new DefaultHttpClient();
         HttpGet get = new HttpGet(baseUrl + "/photos/search/" + tags);
