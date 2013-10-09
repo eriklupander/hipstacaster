@@ -30,6 +30,9 @@ public class GridViewAdapter extends ArrayAdapter {
     }
     
   
+    public void clear() {
+    	data.clear();
+    }
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {

@@ -14,14 +14,14 @@ import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.MediaRouteActionProvider;
 import android.support.v7.media.MediaRouteSelector;
 import android.support.v7.media.MediaRouter;
+import android.support.v7.media.MediaRouter.ProviderInfo;
+import android.support.v7.media.MediaRouter.RouteInfo;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.AdapterView;
+import android.view.MenuItem.OnMenuItemClickListener;
 import android.widget.GridView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.cast.ApplicationChannel;
 import com.google.cast.ApplicationMetadata;
@@ -71,20 +71,26 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
         mInfoView = (TextView) findViewById(R.id.status);
         mInfoView.setText("Loading...");
         drawableManager = new DrawableManager();
+        
+        new LoadImageListTask(this).execute("sarek");
 
         mSessionListener = new SessionListener();
         mMessageStream = new CustomHipstaCasterStream();
 
         mCastContext = new CastContext(getApplicationContext());
         MediaRouteHelper.registerMinimalMediaRouteProvider(mCastContext, this);
+        
         mMediaRouter = MediaRouter.getInstance(getApplicationContext());
+//        mMediaRouteSelector = MediaRouteHelper.buildMediaRouteSelector(
+//                MediaRouteHelper.CATEGORY_CAST, null, null);
         mMediaRouteSelector = MediaRouteHelper.buildMediaRouteSelector(
-                MediaRouteHelper.CATEGORY_CAST, APP_NAME, null);
+                MediaRouteHelper.CATEGORY_CAST);
         mMediaRouterCallback = new MediaRouterCallback();
 
-        new LoadImageListTask(this).execute("sarek");
+        
     }
 
+    int index = 0;
 
     public void onPhotoListLoaded(List<Photo> list) {
     	mInfoView.setText("Loaded " + list.size() + " images definitions from Flickr");
@@ -107,7 +113,7 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
 //            }
 //        });
 
-        int index = 0;
+        index = 0;
         for(Photo p : list) {
             drawableManager.fetchDrawableOnThread(p.getSquareUrl(), gridView, index, new Callback() {
 
@@ -119,6 +125,7 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
             });
             index++;
         }
+        gridView.setAlpha(1.0f);
     }
 
     private int loaded = 0;
@@ -135,6 +142,22 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
         MediaRouteActionProvider mediaRouteActionProvider =
                 (MediaRouteActionProvider) MenuItemCompat.getActionProvider(mediaRouteMenuItem);
         mediaRouteActionProvider.setRouteSelector(mMediaRouteSelector);
+        
+        MenuItem settingsMenuItem = menu.findItem(R.id.action_settings);
+        MenuItem refreshMenuItem = menu.findItem(R.id.action_refresh);
+        refreshMenuItem.setOnMenuItemClickListener(new OnMenuItemClickListener() {
+			
+			@Override
+			public boolean onMenuItemClick(MenuItem item) {
+				if(gridView != null) {
+					((GridViewAdapter) gridView.getAdapter()).clear();
+					gridView.setAlpha(0.2f);
+					new LoadImageListTask(HipstaActivity.this).execute("sarek");
+				}
+				return false;
+			}
+		});
+    
         return true;
     }
 
@@ -155,6 +178,7 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     @Override
     protected void onPause() {
         super.onPause();
+        Log.i(TAG, "ENTER - onPause");
         finish();
     }
 
@@ -163,6 +187,7 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
      */
     @Override
     protected void onStop() {
+    	Log.i(TAG, "ENTER - onStop");
         endSession();
         mMediaRouter.removeCallback(mMediaRouterCallback);
         super.onStop();
@@ -193,6 +218,7 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
      */
     @Override
     public void onDestroy() {
+    	Log.i(TAG, "ENTER - onDestroy");
         MediaRouteHelper.unregisterMediaRouteProvider(mCastContext);
         mCastContext.dispose();
         mCastContext = null;
@@ -204,6 +230,7 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
      */
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
+    	Log.i(TAG, "ENTER - onConfigurationChanged");
         super.onConfigurationChanged(newConfig);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
     }
@@ -338,15 +365,67 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
      * An extension of the MediaRoute.Callback specifically for the TicTacToe game.
      */
     private class MediaRouterCallback extends MediaRouter.Callback {
+    	
+    	
+    	
         @Override
+		public void onProviderAdded(MediaRouter router, ProviderInfo provider) {
+        	Log.i(TAG, "onProviderAdded: " + router);
+			super.onProviderAdded(router, provider);
+		}
+
+		@Override
+		public void onProviderChanged(MediaRouter router, ProviderInfo provider) {
+			Log.i(TAG, "onProviderChanged: " + router);
+			super.onProviderChanged(router, provider);
+		}
+
+		@Override
+		public void onProviderRemoved(MediaRouter router, ProviderInfo provider) {
+			Log.i(TAG, "onProviderRemoved: " + router);
+			super.onProviderRemoved(router, provider);
+		}
+
+		@Override
+		public void onRouteAdded(MediaRouter router, RouteInfo route) {
+			Log.i(TAG, "onRouteAdded: " + route);
+			super.onRouteAdded(router, route);
+		}
+
+		@Override
+		public void onRouteChanged(MediaRouter router, RouteInfo route) {
+			Log.i(TAG, "onRouteChanged: " + route);
+			super.onRouteChanged(router, route);
+		}
+
+		@Override
+		public void onRoutePresentationDisplayChanged(MediaRouter router,
+				RouteInfo route) {
+			Log.i(TAG, "onRoutePresentationDisplayChanged: " + route);
+			super.onRoutePresentationDisplayChanged(router, route);
+		}
+
+		@Override
+		public void onRouteRemoved(MediaRouter router, RouteInfo route) {
+			Log.i(TAG, "onRouteRemoved: " + route);
+			super.onRouteRemoved(router, route);
+		}
+
+		@Override
+		public void onRouteVolumeChanged(MediaRouter router, RouteInfo route) {
+			Log.i(TAG, "onRouteVolumeChanged: " + route);
+			super.onRouteVolumeChanged(router, route);
+		}
+
+		@Override
         public void onRouteSelected(MediaRouter router, android.support.v7.media.MediaRouter.RouteInfo route) {
-            sLog.d("onRouteSelected: %s", route);
+            Log.i(TAG, "onRouteSelected: " + route);
             HipstaActivity.this.onRouteSelected(route);
         }
 
         @Override
         public void onRouteUnselected(MediaRouter router, android.support.v7.media.MediaRouter.RouteInfo route) {
-            sLog.d("onRouteUnselected: %s", route);
+        	Log.i(TAG, "onRouteUnselected: " + route);
             HipstaActivity.this.onRouteUnselected(route);
         }
     }

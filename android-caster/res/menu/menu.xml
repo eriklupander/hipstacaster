@@ -22,11 +22,23 @@ app:showAsAction="always"
 
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto" >
+    
+     <item
+        android:id="@+id/action_settings"
+        android:title="@string/settings"
+        android:icon="@drawable/ic_menu_settings_holo_light"
+        app:showAsAction="always" />    
 
     <item
         android:id="@+id/media_route_menu_item"
-        android:title="@string/media_route_menu_title"
+        android:title="@string/media_route_menu_title"  
         app:actionProviderClass="android.support.v7.app.MediaRouteActionProvider"
 		app:showAsAction="always"/>
+    
+    <item
+        android:id="@+id/action_refresh"
+        android:title="@string/refresh"
+        android:icon="@drawable/ic_menu_refresh"
+        app:showAsAction="always" />    
 
 </menu>
