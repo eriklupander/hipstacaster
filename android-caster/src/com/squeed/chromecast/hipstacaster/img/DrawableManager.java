@@ -1,5 +1,15 @@
 package com.squeed.chromecast.hipstacaster.img;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
@@ -7,21 +17,9 @@ import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-import android.widget.GridView;
-import android.widget.ImageView;
-import com.squeed.chromecast.hipstacaster.grid.ImageItem;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
- * Fix author for this, picked from stackoverflow.
+ * TODO Fix author for this, picked from stackoverflow.
  */
 public class DrawableManager {
 
@@ -35,8 +33,6 @@ public class DrawableManager {
         if (drawableMap.containsKey(urlString)) {
             return drawableMap.get(urlString);
         }
-
-        Log.d(this.getClass().getSimpleName(), "image url:" + urlString);
         try {
             InputStream is = fetch(urlString);
             Drawable drawable = Drawable.createFromStream(is, "src");
@@ -61,22 +57,20 @@ public class DrawableManager {
         }
     }
 
-    public void fetchDrawableOnThread(final String urlString, final GridView gridView, final int index, final Callback callback) {
+    public void fetchDrawableOnThread(final String urlString, final int index, final Callback callback) {
 
         final Handler handler = new Handler() {
             @Override
             public void handleMessage(Message message) {
-                ImageItem itemAtPosition = (ImageItem) gridView.getItemAtPosition(index);
-                itemAtPosition.setImage(drawableToBitmap(((Drawable) message.obj)));
-                callback.execute();
-                gridView.invalidateViews();
+                if(message.obj != null && message.obj instanceof Drawable) {
+                	callback.updateGridView(drawableToBitmap( (Drawable) message.obj), index);
+                }                
             }
         };
 
         Thread thread = new Thread() {
             @Override
             public void run() {
-                //TODO : set imageView to a "pending" image
                 Drawable drawable = fetchDrawable(urlString);
                 Message message = handler.obtainMessage(1, drawable);
                 handler.sendMessage(message);

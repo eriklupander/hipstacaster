@@ -39,6 +39,12 @@ app:showAsAction="always"
         android:id="@+id/action_refresh"
         android:title="@string/refresh"
         android:icon="@drawable/ic_menu_refresh"
-        app:showAsAction="always" />    
+        app:showAsAction="always" />   
+        
+     <item
+        android:id="@+id/action_slideshow"
+        android:title="@string/slideshow"
+        android:icon="@drawable/ic_menu_slideshow"
+        app:showAsAction="always" />  
 
 </menu>

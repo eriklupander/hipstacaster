@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="@string/settings" >
+
+    <PreferenceCategory android:title="@string/preferencesHeading" >
+        <EditTextPreference
+            android:name="@string/tags"
+            android:defaultValue="sarek"
+            android:key="tagsPref"
+            android:summary="@string/tagsDesc"
+            android:title="@string/tags" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

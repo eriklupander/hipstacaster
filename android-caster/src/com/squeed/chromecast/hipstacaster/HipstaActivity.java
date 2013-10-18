@@ -2,26 +2,36 @@ package com.squeed.chromecast.hipstacaster;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.MediaRouteActionProvider;
 import android.support.v7.media.MediaRouteSelector;
 import android.support.v7.media.MediaRouter;
-import android.support.v7.media.MediaRouter.ProviderInfo;
-import android.support.v7.media.MediaRouter.RouteInfo;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MenuItem.OnMenuItemClickListener;
+import android.view.View;
+import android.widget.AbsListView;
+import android.widget.AbsListView.OnScrollListener;
 import android.widget.GridView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.cast.ApplicationChannel;
 import com.google.cast.ApplicationMetadata;
@@ -39,11 +49,22 @@ import com.squeed.chromecast.hipstacaster.img.Callback;
 import com.squeed.chromecast.hipstacaster.img.DrawableManager;
 import com.squeed.chromecast.hipstacaster.rest.LoadImageListTask;
 
+/**
+ * Demonstrative Activity for the HipstaCaster Android client. Somewhat based on the Android demo tic-tac-toe game from 
+ * https://github.com/googlecast/cast-android-tictactoe
+ * 
+ * @author Erik
+ *
+ */
 public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapter {
 
-    private static final String TAG = HipstaActivity.class.getSimpleName();
+    private static final String DEFAULT_SEARCH_TAG = "sarek";
+	private static final String TAG = HipstaActivity.class.getSimpleName();
     private static final com.google.cast.Logger sLog = new com.google.cast.Logger(TAG, true);
-    private static final String APP_NAME = "HipstaCaster";
+    private static final String APP_NAME = "fc91668a-cf4b-4a18-9611-f2c120d0bf07_1";
+    private static final String PROTOCOL = "com.squeed.chromecast.hipstacaster";
+    
+    static final int IMAGES_PER_FETCH = 20;
 
     private ApplicationSession mSession;
     private SessionListener mSessionListener;
@@ -53,26 +74,75 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     private GridViewAdapter customGridAdapter;
     
     private TextView mInfoView;
+    private ProgressBar spinner;
     
     private CastContext mCastContext;
     private CastDevice mSelectedDevice;
     private MediaRouter mMediaRouter;
     private MediaRouteSelector mMediaRouteSelector;
     private MediaRouter.Callback mMediaRouterCallback;
-
-
+    
+    
+    private ArrayList<ImageItem> photoSet;
     private DrawableManager drawableManager;
-
+    
+    private boolean allowLoading = false;
+    private boolean isLoadingMore = false;
+    private int index = 0;
+    /** Set when an image is clicked, can be use to supply start index of slideshow */
+    private int offset = 0;
+    private int pageOffset = 0;
+    
+    private int loadedInCurrentBatch = 0;
 
     @Override
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         setContentView(R.layout.main);
+        
+        ArrayList<String> protocols = new ArrayList<String>();
+        protocols.add(PROTOCOL);
+        
         mInfoView = (TextView) findViewById(R.id.status);
         mInfoView.setText("Loading...");
+        gridView = (GridView) findViewById(R.id.gridView);
+        gridView.setOnScrollListener(new OnScrollListener() {
+
+			@Override
+			public void onScroll(AbsListView view, int firstVisibleItem,
+					int visibleItemCount, int totalItemCount) {
+              int lastInScreen = firstVisibleItem + visibleItemCount;
+              if (totalItemCount > 0 && (lastInScreen == totalItemCount) && !isLoadingMore && !(pageOffset*IMAGES_PER_FETCH > gridView.getCount()) && allowLoading)  {
+            	  isLoadingMore = true;
+                  // FETCH THE NEXT BATCH OF FEEDS
+            	  SharedPreferences preferences = 
+          	        	PreferenceManager.getDefaultSharedPreferences(HipstaActivity.this);
+                  new LoadImageListTask(HipstaActivity.this, ++pageOffset, IMAGES_PER_FETCH).execute(preferences.getString("tagsPref", DEFAULT_SEARCH_TAG));            	  
+              }
+			}
+
+			@Override
+			public void onScrollStateChanged(AbsListView view, int scrollState) {
+				
+			}        	
+        });
+        spinner = (ProgressBar) findViewById(R.id.myspinner);
+        spinner.setVisibility(View.GONE);
+        photoSet = new ArrayList<ImageItem>();
+        customGridAdapter = new GridViewAdapter(this, R.layout.row_grid, photoSet);
+        gridView.setAdapter(customGridAdapter);
+        
         drawableManager = new DrawableManager();
         
-        new LoadImageListTask(this).execute("sarek");
+        SharedPreferences preferences = 
+	        	PreferenceManager.getDefaultSharedPreferences(HipstaActivity.this);
+        
+        // This flipped check is just for the first load, to make sure the 
+        if(!allowLoading) {
+        	allowLoading = false;
+        	isLoadingMore = true;
+        	new LoadImageListTask(this, pageOffset, IMAGES_PER_FETCH).execute(preferences.getString("tagsPref", DEFAULT_SEARCH_TAG));
+        }
 
         mSessionListener = new SessionListener();
         mMessageStream = new CustomHipstaCasterStream();
@@ -81,54 +151,62 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
         MediaRouteHelper.registerMinimalMediaRouteProvider(mCastContext, this);
         
         mMediaRouter = MediaRouter.getInstance(getApplicationContext());
-//        mMediaRouteSelector = MediaRouteHelper.buildMediaRouteSelector(
-//                MediaRouteHelper.CATEGORY_CAST, null, null);
         mMediaRouteSelector = MediaRouteHelper.buildMediaRouteSelector(
-                MediaRouteHelper.CATEGORY_CAST);
+                MediaRouteHelper.CATEGORY_CAST, APP_NAME, null);
         mMediaRouterCallback = new MediaRouterCallback();
 
         
     }
+    
 
-    int index = 0;
-
+    
+    /**
+     * Typically invoked 
+     * @param list
+     */
     public void onPhotoListLoaded(List<Photo> list) {
+    	
+    	loadedInCurrentBatch = 0;
+    	
     	mInfoView.setText("Loaded " + list.size() + " images definitions from Flickr");
-        ArrayList imageItems = new ArrayList();
-
-
         for(Photo p : list) {
-            imageItems.add(new ImageItem(drawableManager.drawableToBitmap(getResources().getDrawable(R.drawable.user_placeholder)), p.getOwnerName(), p.getSquareUrl()));
+        	photoSet.add(new ImageItem(drawableManager.drawableToBitmap(getResources().getDrawable(R.drawable.user_placeholder)), p.getOwnerName(), p.getFullsizeUrl(), p.getTitle(), p.getDescription()));
         }
-
-        gridView = (GridView) findViewById(R.id.gridView);
-        customGridAdapter = new GridViewAdapter(this, R.layout.row_grid, imageItems);
-        gridView.setAdapter(customGridAdapter);
-       
-//        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-//            public void onItemClick(AdapterView<?> parent, View v,
-//                                    int position, long id) {
-//                Toast.makeText(HipstaActivity.this, position + "#ItemClick",
-//                        Toast.LENGTH_SHORT).show();
-//            }
-//        });
-
-        index = 0;
+	
+    
+        index = pageOffset * IMAGES_PER_FETCH;
         for(Photo p : list) {
-            drawableManager.fetchDrawableOnThread(p.getSquareUrl(), gridView, index, new Callback() {
+    		drawableManager.fetchDrawableOnThread(p.getSquareUrl(), index, new Callback() {
 
+    			/**
+    			 * 
+    			 */
 				@Override
-				public void execute() {
-					mInfoView.setText("Loaded " + ++loaded + " images");
-				}
-            	
-            });
+				public void updateGridView(final Bitmap bitmap, final int position) {
+					runOnUiThread(new Runnable() {
+
+						@Override
+						public void run() {
+							ImageItem itemAtPosition = (ImageItem) gridView.getItemAtPosition(position);
+			                itemAtPosition.setImage(bitmap);	                            
+			                gridView.invalidateViews();
+			                loadedInCurrentBatch++;
+			                if(loadedInCurrentBatch >= IMAGES_PER_FETCH) {
+			                	allowLoading = true;
+			                	loadedInCurrentBatch = 0;
+			                }
+						}
+						
+					});					
+				}        
+    		});
             index++;
         }
         gridView.setAlpha(1.0f);
+    	
     }
 
-    private int loaded = 0;
+    
 
 
     /**
@@ -144,6 +222,17 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
         mediaRouteActionProvider.setRouteSelector(mMediaRouteSelector);
         
         MenuItem settingsMenuItem = menu.findItem(R.id.action_settings);
+        settingsMenuItem.setOnMenuItemClickListener(new OnMenuItemClickListener() {
+			
+			@Override
+			public boolean onMenuItemClick(MenuItem item) {
+				Intent settingsActivity = new Intent(getBaseContext(),
+                        Preferences.class);
+				startActivity(settingsActivity);
+				return false;
+			}
+		});
+
         MenuItem refreshMenuItem = menu.findItem(R.id.action_refresh);
         refreshMenuItem.setOnMenuItemClickListener(new OnMenuItemClickListener() {
 			
@@ -152,12 +241,30 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
 				if(gridView != null) {
 					((GridViewAdapter) gridView.getAdapter()).clear();
 					gridView.setAlpha(0.2f);
-					new LoadImageListTask(HipstaActivity.this).execute("sarek");
+					SharedPreferences preferences = 
+				        	PreferenceManager.getDefaultSharedPreferences(HipstaActivity.this);
+					pageOffset = 0;
+					
+					new LoadImageListTask(HipstaActivity.this, pageOffset, IMAGES_PER_FETCH).execute(preferences.getString("tagsPref", DEFAULT_SEARCH_TAG));
 				}
 				return false;
 			}
-		});
-    
+		});    
+        
+        MenuItem slideShowMenuItem = menu.findItem(R.id.action_slideshow);
+        slideShowMenuItem.setOnMenuItemClickListener(new OnMenuItemClickListener() {
+			
+			@Override
+			public boolean onMenuItemClick(MenuItem item) {
+				if(mSession != null && mSession.hasStarted() && photoSet != null && photoSet.size() > 0) {
+					sendPhotoSet();
+					Toast.makeText(HipstaActivity.this, "Starting slideshow on ChromeCast!", Toast.LENGTH_SHORT).show();
+				} else {
+					Toast.makeText(HipstaActivity.this, "Please connect to cast device first.", Toast.LENGTH_SHORT).show();
+				}
+				return false;
+			}
+        });
         return true;
     }
 
@@ -179,17 +286,17 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     protected void onPause() {
         super.onPause();
         Log.i(TAG, "ENTER - onPause");
-        finish();
+       // finish();
     }
 
     /**
-     * Attempts to end the current game session when the activity stops.
+     * 
      */
     @Override
     protected void onStop() {
     	Log.i(TAG, "ENTER - onStop");
-        endSession();
-        mMediaRouter.removeCallback(mMediaRouterCallback);
+        //endSession();
+        //mMediaRouter.removeCallback(mMediaRouterCallback);
         super.onStop();
     }
 
@@ -200,7 +307,7 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
         if ((mSession != null) && (mSession.hasStarted())) {
             try {
                 if (mSession.hasChannel()) {
-                    mMessageStream.end();
+                	// TODO perhaps notify receiever app?
                 }
                 mSession.endSession();
             } catch (IOException e) {
@@ -219,6 +326,11 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     @Override
     public void onDestroy() {
     	Log.i(TAG, "ENTER - onDestroy");
+    	
+    	// These two has been moved from onStop. We don't want slideshow or view photo on Chromecast to stop unless Hipstacaster app closes for real.
+    	endSession();
+    	mMediaRouter.removeCallback(mMediaRouterCallback);
+    	
         MediaRouteHelper.unregisterMediaRouteProvider(mCastContext);
         mCastContext.dispose();
         mCastContext = null;
@@ -239,9 +351,11 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
 
 
     private void setSelectedDevice(CastDevice device) {
+    	
         mSelectedDevice = device;
 
         if (mSelectedDevice != null) {
+        	Log.i(TAG, "ENTER -  setSelectedDevice: " + device.toString());
         	mInfoView.setText("Starting session");
             mSession = new ApplicationSession(mCastContext, mSelectedDevice);
             mSession.setListener(mSessionListener);
@@ -284,7 +398,7 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     private class SessionListener implements ApplicationSession.Listener {
         @Override
         public void onSessionStarted(ApplicationMetadata appMetadata) {
-            sLog.d("SessionListener.onStarted");
+        	Log.i(TAG, "SessionListener.onStarted");
 
             ApplicationChannel channel = mSession.getChannel();
             if (channel == null) {
@@ -293,7 +407,6 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
             }
             channel.attachMessageStream(mMessageStream);
             mInfoView.setText("Session started");
-            // TODO Here maybe call the stream somehow.
         }
 
         @Override
@@ -308,43 +421,33 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     }
 
     /**
-     * An extension of the GameMessageStream specifically for the TicTacToe game.
+     * An extension of the MessageStream with some local details.
      */
     private class CustomHipstaCasterStream extends HipstaCasterMessageStream {
-
 
         /**
          * Displays an error dialog.
          */
         @Override
         protected void onError(String errorMessage) {
-
-            new AlertDialog.Builder(HipstaActivity.this)
-                    .setTitle("Error")
-                    .setMessage(errorMessage)
-                    .setCancelable(false)
-                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int id) {
-                            dialog.cancel();
-                        }
-                    })
-                    .create()
-                    .show();
+        	buildAlertDialog("Error", errorMessage);
         }
 
-        @Override
-        protected void start() {
-            buildAlertDialog("Title: Start", "Starting...");
-        }
+        /**
+         * Displays a message that the slideshow has ended.
+         */
+		@Override
+		protected void onSlideShowEnded() {
+			buildAlertDialog("Message from ChromeCast", "Slideshow has ended");
+		}
 
-
-        @Override
-        protected void end() {
-            buildAlertDialog("Title: End", "Ending...");
-        }
+		@Override
+		protected void onCurrentSlideShowImageMessage(String message) {
+			mInfoView.setText(message);
+		}		
     }
-
+    
+    
     private void buildAlertDialog(String title, String msg) {
         new AlertDialog.Builder(HipstaActivity.this)
                 .setTitle(title)
@@ -364,58 +467,7 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     /**
      * An extension of the MediaRoute.Callback specifically for the TicTacToe game.
      */
-    private class MediaRouterCallback extends MediaRouter.Callback {
-    	
-    	
-    	
-        @Override
-		public void onProviderAdded(MediaRouter router, ProviderInfo provider) {
-        	Log.i(TAG, "onProviderAdded: " + router);
-			super.onProviderAdded(router, provider);
-		}
-
-		@Override
-		public void onProviderChanged(MediaRouter router, ProviderInfo provider) {
-			Log.i(TAG, "onProviderChanged: " + router);
-			super.onProviderChanged(router, provider);
-		}
-
-		@Override
-		public void onProviderRemoved(MediaRouter router, ProviderInfo provider) {
-			Log.i(TAG, "onProviderRemoved: " + router);
-			super.onProviderRemoved(router, provider);
-		}
-
-		@Override
-		public void onRouteAdded(MediaRouter router, RouteInfo route) {
-			Log.i(TAG, "onRouteAdded: " + route);
-			super.onRouteAdded(router, route);
-		}
-
-		@Override
-		public void onRouteChanged(MediaRouter router, RouteInfo route) {
-			Log.i(TAG, "onRouteChanged: " + route);
-			super.onRouteChanged(router, route);
-		}
-
-		@Override
-		public void onRoutePresentationDisplayChanged(MediaRouter router,
-				RouteInfo route) {
-			Log.i(TAG, "onRoutePresentationDisplayChanged: " + route);
-			super.onRoutePresentationDisplayChanged(router, route);
-		}
-
-		@Override
-		public void onRouteRemoved(MediaRouter router, RouteInfo route) {
-			Log.i(TAG, "onRouteRemoved: " + route);
-			super.onRouteRemoved(router, route);
-		}
-
-		@Override
-		public void onRouteVolumeChanged(MediaRouter router, RouteInfo route) {
-			Log.i(TAG, "onRouteVolumeChanged: " + route);
-			super.onRouteVolumeChanged(router, route);
-		}
+    private class MediaRouterCallback extends MediaRouter.Callback {    	
 
 		@Override
         public void onRouteSelected(MediaRouter router, android.support.v7.media.MediaRouter.RouteInfo route) {
@@ -446,4 +498,48 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     @Override
     public void onUpdateVolume(double delta) {
     }
+
+	public void openPhoto(String title, String url, String ownerName, String description) {
+		if(isCastSessionActive()) {
+			mMessageStream.openPhotoOnChromecast(title, url, ownerName, description);
+		}		
+	}
+	
+	public void sendPhotoSet() {
+		if(isCastSessionActive()) {
+			mMessageStream.sendPhotoSetToChromecast(photoSet, offset);
+		}
+	}
+	
+	private boolean isCastSessionActive() {
+		return mSession != null && mSession.hasChannel() && mSession.hasStarted();
+	}
+	
+
+	public void showSpinner() {
+		isLoadingMore = true;
+		this.runOnUiThread(new Runnable() {
+
+			@Override
+			public void run() {
+				spinner.setVisibility(View.VISIBLE);
+			}			
+		});
+	}	
+
+	public void hideSpinner() {
+		isLoadingMore = false;
+		this.runOnUiThread(new Runnable() {
+
+			@Override
+			public void run() {
+				spinner.setVisibility(View.GONE);
+			}			
+		});
+		
+	}
+	
+	public void setOffset(int offset) {
+		this.offset = offset;
+	}
 }

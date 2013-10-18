@@ -28,13 +28,12 @@ public class RestClient {
 
     private String baseUrl = "http://192.168.1.128:8080/hipstacaster/rest";
 
-    public List<Photo> search(String tags) {
+    public List<Photo> search(String tags, int pageOffset, int perPage) {
     	ArrayList<Photo> l = new ArrayList<Photo>();
         HttpContext localContext = new BasicHttpContext();
         HttpClient client = new DefaultHttpClient();
-        HttpGet get = new HttpGet(baseUrl + "/photos/search/" + tags);
-        //get.setHeader("Content-type", "application/json");
-        //get.setHeader("Accepts", "application/json");
+        HttpGet get = new HttpGet(baseUrl + "/photos/search/" + tags + "?page=" + pageOffset + "&perPage=" + perPage);
+        
         try {
             HttpResponse response = client.execute(get,localContext);
 
@@ -44,7 +43,7 @@ public class RestClient {
 
             for(int a = 0; a < jsonArray.length(); a++) {
                 JSONObject o = (JSONObject) jsonArray.get(a);
-                Photo p = new Photo(o.getString("ownerName"), o.getString("fullsizeUrl"), o.getString("squareUrl"));
+                Photo p = new Photo(o.getString("ownerName"), o.getString("fullsizeUrl"), o.getString("squareUrl"), o.getString("title"), o.getString("description"));
                 l.add(p);
             }
 

@@ -1,52 +1,99 @@
 package com.squeed.chromecast.hipstacaster;
 
-/*
- * Copyright (C) 2013 Google Inc. All Rights Reserved. 
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at 
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software 
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and 
- * limitations under the License.
- */
+import java.io.IOException;
+import java.util.ArrayList;
 
-import android.util.Log;
-import com.google.cast.MessageStream;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.util.Log;
+
+import com.google.cast.MessageStream;
+import com.squeed.chromecast.hipstacaster.grid.ImageItem;
+
 /**
- * An abstract class which encapsulates control for sending and receiving messages to/from the receiver app
+ * An abstract class which encapsulates control for sending and receiving messages to/from the receiver app.
+ * 
+ * Derived from tic-tac-tie example.
  */
 public abstract class HipstaCasterMessageStream extends MessageStream {
 	private static final String TAG = HipstaCasterMessageStream.class.getSimpleName();
 
-	private static final String GAME_NAMESPACE = "com.squeed.chromecast.hipstacaster";
+	private static final String HIPSTACASTER_NAMESPACE = "com.squeed.chromecast.hipstacaster";
 
 	// Receivable event types
 	private static final String KEY_EVENT = "event";
 	private static final String KEY_ERROR = "error";
 	private static final String KEY_MESSAGE = "message";
+	
+	private static final String KEY_COMMAND = "command";
+	
+	private static final String KEY_TEXT = "text";
+	private static final String KEY_SLIDESHOW_ENDED = "slideshow_ended";
+	private static final String KEY_SLIDESHOW_CURRENT_IMAGE_MSG = "slideshow_current_image";
 
-	// Commands
 
 	/**
-	 * Constructs a new GameMessageStream with GAME_NAMESPACE as the namespace
+	 * Constructs a new HipstaCasterMessageStream with HIPSTACASTER_NAMESPACE as the namespace
 	 * used by the superclass.
 	 */
 	protected HipstaCasterMessageStream() {
-		super(GAME_NAMESPACE);
+		super(HIPSTACASTER_NAMESPACE);
 	}
 
+	protected abstract void onSlideShowEnded();
 	protected abstract void onError(String errorMessage);
-	protected abstract void start();
-	protected abstract void end();
+	protected abstract void onCurrentSlideShowImageMessage(String message);
+	
+	public final void openPhotoOnChromecast(String title, String url, String ownerName, String description) {
+        try {
+            Log.d(TAG, "openPhotoOnChromecast: " + url);
+            JSONObject payload = new JSONObject();
+            payload.put(KEY_COMMAND, "viewphoto");
+            payload.put("fullsizeUrl", url);
+            payload.put("ownerName", ownerName);
+            payload.put("title", title);
+            payload.put("description", description);
+           
+            sendMessage(payload);
+        } catch (JSONException e) {
+            Log.e(TAG, "Cannot parse or serialize data for openPhotoOnChromecast", e);
+        } catch (IOException e) {
+            Log.e(TAG, "Unable to send openPhotoOnChromecast message", e);
+        } catch (IllegalStateException e) {
+            Log.e(TAG, "Message Stream is not attached", e);
+        }
+    }
+	
+	public final void sendPhotoSetToChromecast(ArrayList<ImageItem> photoSet, int offset) {
+		try {
+            Log.d(TAG, "sendPhotoSetToChromecast");
+            JSONArray array = new JSONArray();
+            for(ImageItem imageItem : photoSet) {
+            	JSONObject payload = new JSONObject();
+            	
+                payload.put("fullsizeUrl", imageItem.getUrl());
+                payload.put("ownerName", imageItem.getOwnerName());
+                payload.put("title", imageItem.getTitle());
+                payload.put("description", imageItem.getDescription());
+                array.put(payload);
+            }
+            
+            JSONObject obj = new JSONObject();
+            obj.put(KEY_COMMAND, "slideshow");
+            obj.put("photoSet", array);
+            obj.put("offset", offset);
+           
+            sendMessage(obj);
+        } catch (JSONException e) {
+            Log.e(TAG, "Cannot parse or serialize data for sendPhotoSetToChromecast", e);
+        } catch (IOException e) {
+            Log.e(TAG, "Unable to send a sendPhotoSetToChromecast message", e);
+        } catch (IllegalStateException e) {
+            Log.e(TAG, "Message Stream is not attached", e);
+        }
+	}
 
 	@Override
 	public void onMessageReceived(JSONObject message) {
@@ -63,13 +110,17 @@ public abstract class HipstaCasterMessageStream extends MessageStream {
 						e.printStackTrace();
 					}
 				}
+				else if (KEY_SLIDESHOW_ENDED.equals(event)) {
+					onSlideShowEnded();
+				}
+				else if (KEY_SLIDESHOW_CURRENT_IMAGE_MSG.equals(event)) {
+					onCurrentSlideShowImageMessage(message.getString(KEY_TEXT));
+				}
 			} else {
 				Log.w(TAG, "Unknown message: " + message);
 			}
 		} catch (JSONException e) {
 			Log.w(TAG, "Message doesn't contain an expected key.", e);
 		}
-	}
-
-	
+	}	
 }

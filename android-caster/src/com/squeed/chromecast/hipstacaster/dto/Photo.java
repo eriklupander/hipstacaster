@@ -12,13 +12,17 @@ public class Photo {
     private String ownerName;
     private String fullsizeUrl;
     private String squareUrl;
+    private String title;
+    private String description;
 
     public Photo() {}
 
-    public Photo(String ownerName, String fullsizeUrl, String squareUrl) {
+    public Photo(String ownerName, String fullsizeUrl, String squareUrl, String title, String description) {
         this.ownerName = ownerName;
         this.fullsizeUrl = fullsizeUrl;
         this.squareUrl = squareUrl;
+        this.title = title;
+        this.description = description;
     }
 
     public String getOwnerName() {
@@ -44,4 +48,20 @@ public class Photo {
     public void setSquareUrl(String squareUrl) {
         this.squareUrl = squareUrl;
     }
+
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
 }

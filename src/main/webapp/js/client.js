@@ -1,12 +1,14 @@
-
+/**
+ * This can be used if we want to access the Hipstacaster backend directly from the receiver app.
+ */
 var client = (function($) {
 
     var _baseRestPath = '/hipstacaster/rest';
 
-    function _search(tags) {
+    function _search(tags, page) {
         return $.ajax({
             type: 'GET',
-            url: _baseRestPath +'/photos/search/' + tags,
+            url: _baseRestPath +'/photos/search/' + tags + '/' + page,
             dataType: 'json',
             async: false
         });
@@ -43,8 +45,8 @@ var client = (function($) {
 
 
     return {
-        search : function(tags){
-            return JSON.parse(_search(tags).responseText);
+        search : function(tags, page){
+            return JSON.parse(_search(tags, page).responseText);
         },
 
         getPopularAlbums : function(){

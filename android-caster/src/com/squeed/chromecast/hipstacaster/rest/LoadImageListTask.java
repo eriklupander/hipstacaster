@@ -17,23 +17,27 @@ import com.squeed.chromecast.hipstacaster.dto.Photo;
 public class LoadImageListTask extends AsyncTask<String, Void, List<Photo>> {
 
     private final HipstaActivity activity;
-    private Exception exception;
     private RestClient restClient = new RestClient();
+	private int pageOffset;
+	private int perPage;
 
-    public LoadImageListTask(HipstaActivity activity) {
+    public LoadImageListTask(HipstaActivity activity, int pageOffset, int perPage) {
         this.activity = activity;
+		this.pageOffset = pageOffset;
+		this.perPage = perPage;
     }
 
     protected List<Photo> doInBackground(String... tags) {
+    	activity.showSpinner();
         try {
-            return restClient.search(tags[0]);
+            return restClient.search(tags[0], pageOffset, perPage);
         } catch (Exception e) {
-            this.exception = e;
             return null;
         }
     }
 
     protected void onPostExecute(List<Photo> list) {
         activity.onPhotoListLoaded(list);
+        activity.hideSpinner();
     }
 }

@@ -1,8 +1,57 @@
-.album {
-    float:left;
+body {
+    font-family: Open Sans, Helvetica, Arial, Lucida, sans-serif;
+    text-rendering: optimizelegibility;
+    background-color:black;
     text-align:center;
 }
 
 .author-small {
-    font-size:6px;
+    font-size: 6px;
+}
+
+.photo {
+
+}
+
+.photo_infobox {
+    text-align:left;
+    color: lightgrey;
+    position: absolute;
+    left: 30px;
+    bottom: 50px;
+    max-width:640px;
+    z-index: 1;
+    background: rgba(0, 0, 0, 0.30);
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.photo_title {
+    font-size: 18px;
+    z-index: 2;
+}
+
+.photo_author {
+    font-size: 13px;
+    z-index: 2;
+}
+
+#content {
+    overflow: hidden;
+}
+
+.global_message {
+    font-size:32px;
+    z-index: 10;
+    color: lightgrey;
+    position: absolute;
+    background: rgba(0, 0, 0, 0.30);
+    padding: 8px;
+    border-radius: 6px;
+    text-align: center;
+    left: 50%;
+    margin-top: -50px;
+    margin-left: -150px;
+    width: 300px;
+    height: 100px;
 }

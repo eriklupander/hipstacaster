@@ -38,8 +38,8 @@ public class FlickrController {
 
     Logger log = LoggerFactory.getLogger(FlickrController.class);
 
-    private String apiKey = "xxx";
-    private String sharedSecret = "yyy";
+    private String apiKey = "abc";
+    private String sharedSecret = "def";
 
     private Flickr f;
 
@@ -48,12 +48,16 @@ public class FlickrController {
 
     private static final HashSet<String> extras = new HashSet<>();
     {
+        extras.add("url_l");
         extras.add("url_t");
         extras.add("url_s");
         extras.add("url_m");
         extras.add("url_o");
         extras.add("url_sq");
+        extras.add("url_n");
+        extras.add("url_z");
         extras.add("owner_name");
+        extras.add("description");
     }
 
     @PostConstruct
@@ -67,7 +71,7 @@ public class FlickrController {
     }
 
 
-    public List<TinyPhotoDTO> search(String tags) throws HipstaException {
+    public List<TinyPhotoDTO> search(String tags, Integer page) throws HipstaException {
         List<TinyPhotoDTO> list = new ArrayList<>();
         SearchParameters params = new SearchParameters();
         params.setTags(toArray(tags));
@@ -75,11 +79,9 @@ public class FlickrController {
 
         try {
             long start = System.currentTimeMillis();
-            PhotoList<Photo> searchResult = photoInterface.search(params, 20, 0);
+            PhotoList<Photo> searchResult = photoInterface.search(params, 20, page);
             log.info("Reading 20 photos over interface took {} ms", (System.currentTimeMillis() - start));
-            start = System.currentTimeMillis();
             toTinyPhotoDTOs(list, searchResult);
-            log.info("Reading 20 photosizes over interface took {} ms", (System.currentTimeMillis() - start));
             return list;
         } catch (FlickrException e) {
             throw new HipstaException(e.getMessage());
@@ -93,51 +95,6 @@ public class FlickrController {
         return new String[]{tags};
     }
 
-    public List<Gallery> getPopularAlbums() throws HipstaException {
-        List<Gallery> galleries = new ArrayList<>();
-
-        SearchParameters params = new SearchParameters();
-
-        int added = 0;
-
-        try {
-            PhotoList<Photo> photoList = photoInterface.searchInterestingness(params, 50, 0);
-
-            for(int a = 0; a < photoList.size() && added < 10; a++) {
-                Photo photo = photoList.get(a);
-                User owner = photo.getOwner();
-                List<Gallery> galleryList = galleriesInterface.getList(owner.getId(), 1, 0);
-                if(galleryList.size() > 0) {
-                    galleries.add(galleryList.get(0));
-                    added++;
-                }
-            }
-        } catch (FlickrException e) {
-            throw new HipstaException(e.getMessage());
-        }
-
-        return galleries;
-    }
-
-    public Gallery getAlbum(String albumId) throws HipstaException {
-        try {
-            return galleriesInterface.getInfo(albumId);
-        } catch (FlickrException e) {
-            throw new HipstaException(e.getMessage());
-        }
-    }
-
-    public List<TinyPhotoDTO> getPhotosOfAlbum(String albumId) throws HipstaException {
-        List<TinyPhotoDTO> list = new ArrayList<>();
-        try {
-            PhotoList<Photo> photos = galleriesInterface.getPhotos(albumId, new HashSet<String>(), 100, 0);
-            toTinyPhotoDTOs(list, photos);
-
-            return list;
-        } catch (FlickrException e) {
-            throw new HipstaException(e.getMessage());
-        }
-    }
 
     private void toTinyPhotoDTOs(List<TinyPhotoDTO> list, PhotoList<Photo> photos) throws FlickrException {
         for(int a = 0; a < photos.size(); a++) {
@@ -149,7 +106,7 @@ public class FlickrController {
 
     public TinyPhotoDTO getPhoto(String photoId) throws HipstaException {
         try {
-            Photo photo = photoInterface.getPhoto(photoId);
+            Photo photo = photoInterface.getInfo(photoId, null);
             TinyPhotoDTO dto = new TinyPhotoDTO(photo);
             fetchAndApplySizes(photoId, dto);
             return dto;
@@ -168,7 +125,7 @@ public class FlickrController {
             if(size.getLabel() == Size.SQUARE) {
                 dto.setSquareUrl(size.getSource());
             }
-            if(size.getLabel() == Size.LARGE) {
+            if(size.getLabel() == Size.MEDIUM_800) {
                 dto.setFullsizeUrl(size.getSource());
             }
         }

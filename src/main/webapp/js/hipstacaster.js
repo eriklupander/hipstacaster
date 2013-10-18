@@ -7,6 +7,10 @@ var cast = window.cast || {};
 
   HipstaCaster.PROTOCOL = 'com.squeed.chromecast.hipstacaster';
 
+    HipstaCaster.sendMessage = function(msg) {
+        hipstacaster.broadcast(msg);
+    }
+
   /**
    * Creates a HipstaCast object and attaches a
    * cast.receiver.ChannelHandler, which receives messages from the
@@ -18,6 +22,8 @@ var cast = window.cast || {};
     
     this.mChannelHandler =
         new cast.receiver.ChannelHandler('HipstaCasterDebug');
+
+    /** Listeners */
     this.mChannelHandler.addEventListener(
         cast.receiver.Channel.EventType.MESSAGE,
         this.onMessage.bind(this));
@@ -29,7 +35,9 @@ var cast = window.cast || {};
         this.onChannelClosed.bind(this));
   }
 
-  // Adds event listening functions to HipstaCast.prototype.
+
+
+  // Adds event listening functions to HipstaCaster.prototype.
   HipstaCaster.prototype = {
 
     /**
@@ -61,19 +69,13 @@ var cast = window.cast || {};
      * @param {event} event the event to be processed.
      */
     onMessage: function(event) {
+
       var message = event.message;
-      var channel = event.target;
-      console.log('********onMessage********' + JSON.stringify(message));
-    
-      if (message.command == 'next') {
-        this.onNext(channel, message);
-      } else if (message.command == 'prev') {
-        this.onPrev(channel);
-      } else if (message.command == 'close') {
-        this.onClose(channel, message);
-      } else {
-        cast.log.error('Invalid message command: ' + message.command);
-      }
+        if (message.command == 'viewphoto') {
+            flickr.viewPhoto(message);
+        } else if (message.command == 'slideshow') {
+            flickr.startSlideshow(message);
+        }
     },
 
    
@@ -94,17 +96,6 @@ var cast = window.cast || {};
     },
 
     /**
-     * @private
-     */
-    startGame_: function() {
-      console.log('****startGame');
-      
-     // this.mPlayer1.channel.send({ event: 'joined',
-      //                             player: this.mPlayer1.player,
-      //                             opponent: this.mPlayer2.name });
-    },
-
-    /**
      * Broadcasts a message to all of this object's known channels.
      * @param {Object|string} message the message to broadcast.
      */
@@ -114,9 +105,26 @@ var cast = window.cast || {};
           channel.send(message);
         });
     }
-
   };
 
   // Exposes public functions and APIs
   cast.HipstaCaster = HipstaCaster;
+
+
+    /** Methods */
+    cast.HipstaCaster.notifySlideShowEnded = function() {
+        var payload = {
+            "event" : "slideshow_ended"
+        };
+        HipstaCaster.sendMessage(payload);
+    };
+
+    cast.HipstaCaster.notifyCurrentPhoto = function(msg) {
+        var payload = {
+            "event" : "slideshow_current_image",
+            "text" : msg
+        };
+        HipstaCaster.sendMessage(payload);
+    };
+
 })();

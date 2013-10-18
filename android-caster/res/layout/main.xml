@@ -31,5 +31,13 @@
         android:layout_centerHorizontal="true"
         android:text="@string/status" />
 
+    <ProgressBar
+        android:id="@+id/myspinner"       
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/gridView"
+        android:layout_centerHorizontal="true"
+        android:padding="2dp" />
+
 </RelativeLayout>
 
