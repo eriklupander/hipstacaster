@@ -9,6 +9,11 @@ import android.graphics.Bitmap;
  */
 public interface Callback {
 	
+	/**
+	 * Implementors should put the bitmap into the target adapter (ListViewAdapter, GridViewAdapter etc.) at the specified index.
+	 * @param bitmap
+	 * @param position
+	 */
 	void updateGridView(Bitmap bitmap, int position);
 
 }

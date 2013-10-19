@@ -27,11 +27,7 @@ import com.squeed.chromecast.hipstacaster.dto.TinyPhotoDTO;
 import com.squeed.chromecast.hipstacaster.exception.HipstaException;
 
 /**
- * Created with IntelliJ IDEA.
- * User: Erik
- * Date: 2013-10-03
- * Time: 09:11
- * To change this template use File | Settings | File Templates.
+ * Interfaces our own REST endpoint with Flickr API:s.
  */
 @Component
 public class FlickrController {
@@ -88,7 +84,21 @@ public class FlickrController {
         }
     }
 
+    public TinyPhotoDTO getPhoto(String photoId) throws HipstaException {
+        try {
+            Photo photo = photoInterface.getInfo(photoId, null);
+            TinyPhotoDTO dto = new TinyPhotoDTO(photo);
+            fetchAndApplySizes(photoId, dto);
+            return dto;
+        } catch (FlickrException e) {
+            throw new HipstaException(e.getMessage());
+        }
+    }
+
     private String[] toArray(String tags) {
+        if(tags == null) {
+            throw new IllegalArgumentException("Cannot convert an empty tags string into an array.");
+        }
         if(tags.contains(",")) {
             return tags.split(",");
         }
@@ -104,16 +114,7 @@ public class FlickrController {
         }
     }
 
-    public TinyPhotoDTO getPhoto(String photoId) throws HipstaException {
-        try {
-            Photo photo = photoInterface.getInfo(photoId, null);
-            TinyPhotoDTO dto = new TinyPhotoDTO(photo);
-            fetchAndApplySizes(photoId, dto);
-            return dto;
-        } catch (FlickrException e) {
-            throw new HipstaException(e.getMessage());
-        }
-    }
+
 
     private void fetchAndApplySizes(String photoId, TinyPhotoDTO dto) throws FlickrException {
         Collection<Size> sizes = photoInterface.getSizes(photoId);

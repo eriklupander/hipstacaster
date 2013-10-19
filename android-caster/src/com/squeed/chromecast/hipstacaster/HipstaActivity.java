@@ -2,9 +2,7 @@ package com.squeed.chromecast.hipstacaster;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -13,7 +11,6 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.view.MenuItemCompat;
@@ -43,6 +40,7 @@ import com.google.cast.MediaRouteHelper;
 import com.google.cast.MediaRouteStateChangeListener;
 import com.google.cast.SessionError;
 import com.squeed.chromecast.hipstacaster.dto.Photo;
+import com.squeed.chromecast.hipstacaster.grid.BitmapImageItem;
 import com.squeed.chromecast.hipstacaster.grid.GridViewAdapter;
 import com.squeed.chromecast.hipstacaster.grid.ImageItem;
 import com.squeed.chromecast.hipstacaster.img.Callback;
@@ -76,6 +74,8 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     private TextView mInfoView;
     private ProgressBar spinner;
     
+    private SharedPreferences preferences;
+    
     private CastContext mCastContext;
     private CastDevice mSelectedDevice;
     private MediaRouter mMediaRouter;
@@ -98,53 +98,46 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     @Override
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
-        setContentView(R.layout.main);
+        setContentView(R.layout.main);        
         
-        ArrayList<String> protocols = new ArrayList<String>();
-        protocols.add(PROTOCOL);
-        
-        mInfoView = (TextView) findViewById(R.id.status);
-        mInfoView.setText("Loading...");
-        gridView = (GridView) findViewById(R.id.gridView);
-        gridView.setOnScrollListener(new OnScrollListener() {
+        initUIComponents();
+        loadInitialBatch();
+        initMediaRouter();
+    }
 
-			@Override
-			public void onScroll(AbsListView view, int firstVisibleItem,
-					int visibleItemCount, int totalItemCount) {
-              int lastInScreen = firstVisibleItem + visibleItemCount;
-              if (totalItemCount > 0 && (lastInScreen == totalItemCount) && !isLoadingMore && !(pageOffset*IMAGES_PER_FETCH > gridView.getCount()) && allowLoading)  {
-            	  isLoadingMore = true;
-                  // FETCH THE NEXT BATCH OF FEEDS
-            	  SharedPreferences preferences = 
-          	        	PreferenceManager.getDefaultSharedPreferences(HipstaActivity.this);
-                  new LoadImageListTask(HipstaActivity.this, ++pageOffset, IMAGES_PER_FETCH).execute(preferences.getString("tagsPref", DEFAULT_SEARCH_TAG));            	  
-              }
-			}
 
-			@Override
-			public void onScrollStateChanged(AbsListView view, int scrollState) {
-				
-			}        	
-        });
-        spinner = (ProgressBar) findViewById(R.id.myspinner);
-        spinner.setVisibility(View.GONE);
-        photoSet = new ArrayList<ImageItem>();
-        customGridAdapter = new GridViewAdapter(this, R.layout.row_grid, photoSet);
-        gridView.setAdapter(customGridAdapter);
+
+	private void loadInitialBatch() {
+		preferences = PreferenceManager.getDefaultSharedPreferences(HipstaActivity.this);
         
-        drawableManager = new DrawableManager();
-        
-        SharedPreferences preferences = 
-	        	PreferenceManager.getDefaultSharedPreferences(HipstaActivity.this);
-        
-        // This flipped check is just for the first load, to make sure the 
+        // This flipped check is just for the first load, to make sure the scrollistener and this load doesn't interfere with each other at startup.
         if(!allowLoading) {
         	allowLoading = false;
         	isLoadingMore = true;
         	new LoadImageListTask(this, pageOffset, IMAGES_PER_FETCH).execute(preferences.getString("tagsPref", DEFAULT_SEARCH_TAG));
         }
+	}
 
-        mSessionListener = new SessionListener();
+
+
+	private void initUIComponents() {
+		drawableManager = new DrawableManager();
+		
+		mInfoView = (TextView) findViewById(R.id.status);
+        mInfoView.setText("Loading...");
+        gridView = (GridView) findViewById(R.id.gridView);
+        gridView.setOnScrollListener(new GridViewOnScrollListener());
+        spinner = (ProgressBar) findViewById(R.id.myspinner);
+        spinner.setVisibility(View.GONE);
+        photoSet = new ArrayList<ImageItem>();
+        customGridAdapter = new GridViewAdapter(this, R.layout.row_grid, photoSet);
+        gridView.setAdapter(customGridAdapter);
+	}
+
+
+
+	private void initMediaRouter() {
+		mSessionListener = new SessionListener();
         mMessageStream = new CustomHipstaCasterStream();
 
         mCastContext = new CastContext(getApplicationContext());
@@ -154,9 +147,7 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
         mMediaRouteSelector = MediaRouteHelper.buildMediaRouteSelector(
                 MediaRouteHelper.CATEGORY_CAST, APP_NAME, null);
         mMediaRouterCallback = new MediaRouterCallback();
-
-        
-    }
+	}
     
 
     
@@ -170,7 +161,7 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     	
     	mInfoView.setText("Loaded " + list.size() + " images definitions from Flickr");
         for(Photo p : list) {
-        	photoSet.add(new ImageItem(drawableManager.drawableToBitmap(getResources().getDrawable(R.drawable.user_placeholder)), p.getOwnerName(), p.getFullsizeUrl(), p.getTitle(), p.getDescription()));
+        	photoSet.add(new BitmapImageItem(drawableManager.drawableToBitmap(getResources().getDrawable(R.drawable.user_placeholder)), p.getOwnerName(), p.getFullsizeUrl(), p.getTitle(), p.getDescription()));
         }
 	
     
@@ -187,7 +178,7 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
 
 						@Override
 						public void run() {
-							ImageItem itemAtPosition = (ImageItem) gridView.getItemAtPosition(position);
+							BitmapImageItem itemAtPosition = (BitmapImageItem) gridView.getItemAtPosition(position);
 			                itemAtPosition.setImage(bitmap);	                            
 			                gridView.invalidateViews();
 			                loadedInCurrentBatch++;
@@ -202,8 +193,7 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     		});
             index++;
         }
-        gridView.setAlpha(1.0f);
-    	
+        gridView.setAlpha(1.0f);    	
     }
 
     
@@ -216,42 +206,26 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
         getMenuInflater().inflate(R.menu.menu, menu);
-        MenuItem mediaRouteMenuItem = menu.findItem(R.id.media_route_menu_item);
+        initChromeCastMenuItem(menu);        
+        initSettingsMenuItem(menu);
+        initRefreshMenuItem(menu);        
+        initSlideShowMenuItem(menu);
+        return true;
+    }
+
+
+
+	private void initChromeCastMenuItem(Menu menu) {
+		MenuItem mediaRouteMenuItem = menu.findItem(R.id.media_route_menu_item);
         MediaRouteActionProvider mediaRouteActionProvider =
                 (MediaRouteActionProvider) MenuItemCompat.getActionProvider(mediaRouteMenuItem);
         mediaRouteActionProvider.setRouteSelector(mMediaRouteSelector);
-        
-        MenuItem settingsMenuItem = menu.findItem(R.id.action_settings);
-        settingsMenuItem.setOnMenuItemClickListener(new OnMenuItemClickListener() {
-			
-			@Override
-			public boolean onMenuItemClick(MenuItem item) {
-				Intent settingsActivity = new Intent(getBaseContext(),
-                        Preferences.class);
-				startActivity(settingsActivity);
-				return false;
-			}
-		});
+	}
 
-        MenuItem refreshMenuItem = menu.findItem(R.id.action_refresh);
-        refreshMenuItem.setOnMenuItemClickListener(new OnMenuItemClickListener() {
-			
-			@Override
-			public boolean onMenuItemClick(MenuItem item) {
-				if(gridView != null) {
-					((GridViewAdapter) gridView.getAdapter()).clear();
-					gridView.setAlpha(0.2f);
-					SharedPreferences preferences = 
-				        	PreferenceManager.getDefaultSharedPreferences(HipstaActivity.this);
-					pageOffset = 0;
-					
-					new LoadImageListTask(HipstaActivity.this, pageOffset, IMAGES_PER_FETCH).execute(preferences.getString("tagsPref", DEFAULT_SEARCH_TAG));
-				}
-				return false;
-			}
-		});    
-        
-        MenuItem slideShowMenuItem = menu.findItem(R.id.action_slideshow);
+
+
+	private void initSlideShowMenuItem(Menu menu) {
+		MenuItem slideShowMenuItem = menu.findItem(R.id.action_slideshow);
         slideShowMenuItem.setOnMenuItemClickListener(new OnMenuItemClickListener() {
 			
 			@Override
@@ -265,12 +239,46 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
 				return false;
 			}
         });
-        return true;
-    }
+	}
+
+
+
+	private void initRefreshMenuItem(Menu menu) {
+		MenuItem refreshMenuItem = menu.findItem(R.id.action_refresh);
+        refreshMenuItem.setOnMenuItemClickListener(new OnMenuItemClickListener() {
+			
+			@Override
+			public boolean onMenuItemClick(MenuItem item) {
+				if(gridView != null) {
+					((GridViewAdapter) gridView.getAdapter()).clear();
+					gridView.setAlpha(0.2f);
+					pageOffset = 0;
+					
+					new LoadImageListTask(HipstaActivity.this, pageOffset, IMAGES_PER_FETCH).execute(preferences.getString("tagsPref", DEFAULT_SEARCH_TAG));
+				}
+				return false;
+			}
+		});
+	}
+
+
+
+	private void initSettingsMenuItem(Menu menu) {
+		MenuItem settingsMenuItem = menu.findItem(R.id.action_settings);
+        settingsMenuItem.setOnMenuItemClickListener(new OnMenuItemClickListener() {
+			
+			@Override
+			public boolean onMenuItemClick(MenuItem item) {
+				Intent settingsActivity = new Intent(getBaseContext(),
+                        Preferences.class);
+				startActivity(settingsActivity);
+				return false;
+			}
+		});
+	}
 
     /**
-     * Called on application start. Using the previously selected Cast device, attempts to begin a
-     * session using the application name TicTacToe.
+     * Called on application start.
      */
     @Override
     protected void onStart() {
@@ -280,13 +288,13 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     }
 
     /**
-     * Removes the activity from memory when the activity is paused.
+     * Does not remove the activity from memory when the activity is paused, we want to keep slideshows etc. going when activity
+     * goes out of focus.
      */
     @Override
     protected void onPause() {
         super.onPause();
         Log.i(TAG, "ENTER - onPause");
-       // finish();
     }
 
     /**
@@ -294,10 +302,8 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
      */
     @Override
     protected void onStop() {
-    	Log.i(TAG, "ENTER - onStop");
-        //endSession();
-        //mMediaRouter.removeCallback(mMediaRouterCallback);
-        super.onStop();
+    	super.onStop();
+    	Log.i(TAG, "ENTER - onStop");        
     }
 
     /**
@@ -356,7 +362,6 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
 
         if (mSelectedDevice != null) {
         	Log.i(TAG, "ENTER -  setSelectedDevice: " + device.toString());
-        	mInfoView.setText("Starting session");
             mSession = new ApplicationSession(mCastContext, mSelectedDevice);
             mSession.setListener(mSessionListener);
 
@@ -441,6 +446,9 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
 			buildAlertDialog("Message from ChromeCast", "Slideshow has ended");
 		}
 
+		/**
+		 * Updates the textView with the currently viewed photo from the slideshoe (n of m)
+		 */
 		@Override
 		protected void onCurrentSlideShowImageMessage(String message) {
 			mInfoView.setText(message);
@@ -448,24 +456,11 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     }
     
     
-    private void buildAlertDialog(String title, String msg) {
-        new AlertDialog.Builder(HipstaActivity.this)
-                .setTitle(title)
-                .setMessage(msg)
-                .setCancelable(false)
-                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
-                    }
-                })
-                .create()
-                .show();
-    }
+    
 
 
     /**
-     * An extension of the MediaRoute.Callback specifically for the TicTacToe game.
+     * An extension of the MediaRoute.Callback so we can invoke our own onRoute selected/unselected
      */
     private class MediaRouterCallback extends MediaRouter.Callback {    	
 
@@ -482,8 +477,6 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
         }
     }
 
-    /* MediaRouteAdapter implementation */
-
     @Override
     public void onDeviceAvailable(CastDevice device, String routeId,
                                   MediaRouteStateChangeListener listener) {
@@ -491,22 +484,26 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
         setSelectedDevice(device);
     }
 
-    @Override
-    public void onSetVolume(double volume) {
-    }
-
-    @Override
-    public void onUpdateVolume(double delta) {
-    }
-
+   
+    /**
+     * Sends image data for a single image to the receiver app.
+     * @param title
+     * @param url
+     * @param ownerName
+     * @param description
+     */
 	public void openPhoto(String title, String url, String ownerName, String description) {
 		if(isCastSessionActive()) {
 			mMessageStream.openPhotoOnChromecast(title, url, ownerName, description);
 		}		
 	}
 	
+	/**
+	 * Sends the current set of photos to the chromecast, including an offset index which can be used to start the slideshow
+	 * at any position of the set.
+	 */
 	public void sendPhotoSet() {
-		if(isCastSessionActive()) {
+		if(isCastSessionActive() && photoSet != null && photoSet.size() > 0) {
 			mMessageStream.sendPhotoSetToChromecast(photoSet, offset);
 		}
 	}
@@ -539,7 +536,57 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
 		
 	}
 	
+	/**
+	 * Sets the current offset (e.g. selected image index)
+	 * 
+	 * @param offset
+	 */
 	public void setOffset(int offset) {
 		this.offset = offset;
 	}
+	
+	 @Override
+    public void onSetVolume(double volume) {
+    }
+
+    @Override
+    public void onUpdateVolume(double delta) {
+    }
+    
+    private void buildAlertDialog(String title, String msg) {
+        new AlertDialog.Builder(HipstaActivity.this)
+                .setTitle(title)
+                .setMessage(msg)
+                .setCancelable(false)
+                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                    }
+                })
+                .create()
+                .show();
+    }
+	
+	
+	
+	private class GridViewOnScrollListener implements OnScrollListener {
+		
+		@Override
+		public void onScroll(AbsListView view, int firstVisibleItem,
+				int visibleItemCount, int totalItemCount) {
+          int lastInScreen = firstVisibleItem + visibleItemCount;
+          if (totalItemCount > 0 && (lastInScreen == totalItemCount) && !isLoadingMore && !(pageOffset*IMAGES_PER_FETCH > gridView.getCount()) && allowLoading)  {
+        	  isLoadingMore = true;                 
+        	 
+              new LoadImageListTask(HipstaActivity.this, ++pageOffset, IMAGES_PER_FETCH).execute(preferences.getString("tagsPref", DEFAULT_SEARCH_TAG));            	  
+          }
+		}
+
+		@Override
+		public void onScrollStateChanged(AbsListView view, int scrollState) {
+			
+		}        	
+    }
+	
 }

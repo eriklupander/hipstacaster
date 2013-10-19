@@ -26,12 +26,28 @@ import java.util.List;
  */
 public class RestClient {
 
-    private String baseUrl = "http://192.168.1.128:8080/hipstacaster/rest";
+    private static final String baseUrl = "http://192.168.1.128:8080/hipstacaster/rest";
+    private HttpClient client = null;
+    
+    public RestClient() {
+    	this.client = new DefaultHttpClient(); 
+    }
 
+    /**
+     * Queries the hipstacaster backend for photos for a certain tag.
+     * 
+     * The hipstacaster currently only queries flickr for photos.
+     * 
+     * Note that (currently), an IO or JSON parse error will return an empty list.
+     * 
+     * @param tags
+     * @param pageOffset
+     * @param perPage
+     * @return
+     */
     public List<Photo> search(String tags, int pageOffset, int perPage) {
     	ArrayList<Photo> l = new ArrayList<Photo>();
-        HttpContext localContext = new BasicHttpContext();
-        HttpClient client = new DefaultHttpClient();
+        HttpContext localContext = new BasicHttpContext();      
         HttpGet get = new HttpGet(baseUrl + "/photos/search/" + tags + "?page=" + pageOffset + "&perPage=" + perPage);
         
         try {
@@ -42,9 +58,8 @@ public class RestClient {
             JSONArray jsonArray = new JSONArray(responseText);
 
             for(int a = 0; a < jsonArray.length(); a++) {
-                JSONObject o = (JSONObject) jsonArray.get(a);
-                Photo p = new Photo(o.getString("ownerName"), o.getString("fullsizeUrl"), o.getString("squareUrl"), o.getString("title"), o.getString("description"));
-                l.add(p);
+                JSONObject o = (JSONObject) jsonArray.get(a);              
+                l.add(new Photo(o.getString("ownerName"), o.getString("fullsizeUrl"), o.getString("squareUrl"), o.getString("title"), o.getString("description")));
             }
 
             return l;

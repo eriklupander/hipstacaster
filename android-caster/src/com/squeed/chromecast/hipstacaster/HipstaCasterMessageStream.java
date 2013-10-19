@@ -15,7 +15,7 @@ import com.squeed.chromecast.hipstacaster.grid.ImageItem;
 /**
  * An abstract class which encapsulates control for sending and receiving messages to/from the receiver app.
  * 
- * Derived from tic-tac-tie example.
+ * Derived from the tic-tac-tie example at: https://github.com/googlecast/cast-android-tictactoe
  */
 public abstract class HipstaCasterMessageStream extends MessageStream {
 	private static final String TAG = HipstaCasterMessageStream.class.getSimpleName();
@@ -43,9 +43,20 @@ public abstract class HipstaCasterMessageStream extends MessageStream {
 	}
 
 	protected abstract void onSlideShowEnded();
-	protected abstract void onError(String errorMessage);
 	protected abstract void onCurrentSlideShowImageMessage(String message);
+	protected abstract void onError(String errorMessage);
 	
+	/**
+	 * Sends image data for a single image to the cast device
+	 * @param title
+	 * 		Title of the photo.
+	 * @param url
+	 * 		The URL from where to load the actual image.
+	 * @param ownerName
+	 * 		Real name or username of the owner of the photo, as provided by the 3rd party photo service. (E.g. flickr)
+	 * @param description
+	 * 		Textual description of the photo. If null, the receiver app should handle that.
+	 */
 	public final void openPhotoOnChromecast(String title, String url, String ownerName, String description) {
         try {
             Log.d(TAG, "openPhotoOnChromecast: " + url);
@@ -66,6 +77,13 @@ public abstract class HipstaCasterMessageStream extends MessageStream {
         }
     }
 	
+	/**
+	 * Sends a full set of data for images to the cast device.
+	 * @param photoSet
+	 * 		Photo data.
+	 * @param offset
+	 * 		Supply a starting offset for the cast device to use for starting the slideshow at some none 0 index.
+	 */
 	public final void sendPhotoSetToChromecast(ArrayList<ImageItem> photoSet, int offset) {
 		try {
             Log.d(TAG, "sendPhotoSetToChromecast");

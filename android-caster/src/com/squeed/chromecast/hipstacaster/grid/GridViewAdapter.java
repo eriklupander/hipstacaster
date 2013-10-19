@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 import android.app.Activity;
 import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -16,6 +15,13 @@ import android.widget.TextView;
 import com.squeed.chromecast.hipstacaster.HipstaActivity;
 import com.squeed.chromecast.hipstacaster.R;
 
+/**
+ * Custom GridViewAdapter, derived from something found on StackOverflow.
+ * 
+ * Currently uses a fugly workaround for storing the relevant data directly on the ViewHolder. Should be replaced.
+ * 
+ * @author Erik
+ */
 public class GridViewAdapter extends ArrayAdapter<ImageItem> {
     private Context context;
     private int layoutResourceId;
@@ -36,16 +42,7 @@ public class GridViewAdapter extends ArrayAdapter<ImageItem> {
         if (row == null) {
             LayoutInflater inflater = ((Activity) context).getLayoutInflater();
             row = inflater.inflate(layoutResourceId, parent, false);
-            row.setOnClickListener(new OnClickListener() {
-				
-				@Override
-				public void onClick(View v) {	
-					
-					ViewHolder tag = (ViewHolder) v.getTag();
-					((HipstaActivity) context).setOffset(tag.position);
-					((HipstaActivity) context).openPhoto(tag.title, tag.fullsizeUrl, tag.ownerName, tag.description);					
-				}
-			});
+            row.setOnClickListener(new GridViewOnClickListener());
            
             holder = new ViewHolder();
             holder.imageTitle = (TextView) row.findViewById(R.id.text);
@@ -55,7 +52,6 @@ public class GridViewAdapter extends ArrayAdapter<ImageItem> {
             holder = (ViewHolder) row.getTag();
         }
         ImageItem item = (ImageItem) getItem(position);
-        Log.i("GridViewAdapter", "getView position: " + position);
         holder.imageTitle.setText(item.getTitle());
         holder.image.setImageBitmap(item.getImage());
         holder.title = item.getTitle();
@@ -75,4 +71,15 @@ public class GridViewAdapter extends ArrayAdapter<ImageItem> {
         String description;
         int position;
     }
+    
+    private class GridViewOnClickListener implements OnClickListener {
+    	
+		@Override
+		public void onClick(View v) {
+			
+			ViewHolder tag = (ViewHolder) v.getTag();
+			((HipstaActivity) context).setOffset(tag.position);
+			((HipstaActivity) context).openPhoto(tag.title, tag.fullsizeUrl, tag.ownerName, tag.description);					
+		}
+    }    
 }

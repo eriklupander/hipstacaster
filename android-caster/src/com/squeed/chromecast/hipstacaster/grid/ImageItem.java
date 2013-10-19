@@ -1,30 +1,20 @@
 package com.squeed.chromecast.hipstacaster.grid;
 
-import android.graphics.Bitmap;
 
 
 public class ImageItem {
-    private Bitmap image;
+	
     private String title;
     private String url;
     private String ownerName;
     private String description;
 
-    public ImageItem(Bitmap image, String title, String url, String ownerName, String description) {
+    public ImageItem(String title, String url, String ownerName, String description) {
         super();
-        this.image = image;
         this.title = title;
         this.url = url;
         this.ownerName = ownerName;
         this.description = description;
-    }
-
-    public Bitmap getImage() {
-        return image;
-    }
-
-    public void setImage(Bitmap image) {
-        this.image = image;
     }
 
     public String getTitle() {
