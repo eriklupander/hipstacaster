@@ -1,7 +1,7 @@
 package com.squeed.chromecast.hipstacaster.rest;
 
 import com.squeed.chromecast.hipstacaster.controller.FlickrController;
-import com.squeed.chromecast.hipstacaster.dto.TinyPhotoDTO;
+import com.squeed.chromecast.hipstacaster.dto.PhotoDTO;
 import com.squeed.chromecast.hipstacaster.exception.HipstaException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -46,7 +46,7 @@ public class RestEndpoint {
     @Path("/photos/search/{tags}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response search(@PathParam("tags") String tags, @QueryParam("page") Integer page, @QueryParam("perPage") Integer perPage) throws HipstaException {
-        List<TinyPhotoDTO> l = flickrController.search(tags, page);
+        List<PhotoDTO> l = flickrController.search(tags, page, perPage);
         return Response.ok(l).build();
     }
 
@@ -61,7 +61,7 @@ public class RestEndpoint {
     @Path("/photos/{photoId}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getPhoto(@PathParam("photoId") String photoId) throws HipstaException {
-        TinyPhotoDTO photo = flickrController.getPhoto(photoId);
+        PhotoDTO photo = flickrController.getPhoto(photoId);
         return Response.ok(photo).build();
     }
 }

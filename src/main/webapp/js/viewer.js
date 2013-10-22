@@ -7,6 +7,10 @@ var viewer = new function() {
 
     var index = 0;
 
+    var isNotNull = function(obj) {
+        return typeof obj != 'undefined' && obj != null && obj != "null";
+    }
+
     var cancelSlideShowInterval = function() {
         if(typeof slideShowIntervalHandle != 'undefined' && slideShowIntervalHandle != null) {
             window.clearInterval(slideShowIntervalHandle);
@@ -19,7 +23,7 @@ var viewer = new function() {
         imgLoad.attr("src", photoEvent.fullsizeUrl);
         imgLoad.unbind("load");
         imgLoad.bind("load", function () {
-            if(typeof this.height != 'undefined' && this.height != null && typeof this.width != 'undefined' && this.width != null) {
+            if(isNotNull(this.height) && isNotNull(this.width)) {
                 var ratio = this.width / this.height;
                 if(this.height > 700) {
                     $('#currentphoto').attr('height', 700);
@@ -34,7 +38,7 @@ var viewer = new function() {
         $('#content').append(imgLoad);
         $('#photo_title').text(photoEvent.title);
         $('#photo_author').text(photoEvent.ownerName);
-        if(typeof photoEvent.description != 'undefined' && photoEvent.description != null && photoEvent.description != "null") {
+        if(isNotNull(photoEvent.description)) {
             $('#photo_description').text(photoEvent.description);
         } else {
             $('#photo_description').empty();
@@ -109,7 +113,7 @@ var viewer = new function() {
             currentPhotoSet = message.photoSet;
 
             slideShowIntervalHandle = window.setInterval(function() {
-                if(typeof currentPhotoSet != 'undefined' && currentPhotoSet != null && currentPhotoSet.length > 0) {
+                if(isNotNull(currentPhotoSet) && currentPhotoSet.length > 0) {
                     if(index < currentPhotoSet.length) {
                         $('#content').fadeOut("fast", function() {
                             // Preload next if possible
