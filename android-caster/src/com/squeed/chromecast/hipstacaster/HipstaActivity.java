@@ -127,8 +127,10 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
         mInfoView.setText("Loading...");
         gridView = (GridView) findViewById(R.id.gridView);
         gridView.setOnScrollListener(new GridViewOnScrollListener());
+        
         spinner = (ProgressBar) findViewById(R.id.myspinner);
         spinner.setVisibility(View.GONE);
+        
         photoSet = new ArrayList<ImageItem>();
         customGridAdapter = new GridViewAdapter(this, R.layout.row_grid, photoSet);
         gridView.setAdapter(customGridAdapter);
@@ -167,11 +169,8 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     
         index = pageOffset * IMAGES_PER_FETCH;
         for(Photo p : list) {
-    		drawableManager.fetchDrawableOnThread(p.getSquareUrl(), index, new Callback() {
-
-    			/**
-    			 * 
-    			 */
+    		drawableManager.fetchDrawableOnThread(p.getSquareUrl(), index, new Callback() { 
+    			
 				@Override
 				public void updateGridView(final Bitmap bitmap, final int position) {
 					runOnUiThread(new Runnable() {
@@ -222,8 +221,6 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
         mediaRouteActionProvider.setRouteSelector(mMediaRouteSelector);
 	}
 
-
-
 	private void initSlideShowMenuItem(Menu menu) {
 		MenuItem slideShowMenuItem = menu.findItem(R.id.action_slideshow);
         slideShowMenuItem.setOnMenuItemClickListener(new OnMenuItemClickListener() {
@@ -240,8 +237,6 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
 			}
         });
 	}
-
-
 
 	private void initRefreshMenuItem(Menu menu) {
 		MenuItem refreshMenuItem = menu.findItem(R.id.action_refresh);
@@ -260,8 +255,6 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
 			}
 		});
 	}
-
-
 
 	private void initSettingsMenuItem(Menu menu) {
 		MenuItem settingsMenuItem = menu.findItem(R.id.action_settings);
@@ -286,26 +279,9 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
         mMediaRouter.addCallback(mMediaRouteSelector, mMediaRouterCallback,
                 MediaRouter.CALLBACK_FLAG_PERFORM_ACTIVE_SCAN);
     }
-
-    /**
-     * Does not remove the activity from memory when the activity is paused, we want to keep slideshows etc. going when activity
-     * goes out of focus.
-     */
-    @Override
-    protected void onPause() {
-        super.onPause();
-        Log.i(TAG, "ENTER - onPause");
-    }
-
-    /**
-     * 
-     */
-    @Override
-    protected void onStop() {
-    	super.onStop();
-    	Log.i(TAG, "ENTER - onStop");        
-    }
-
+    
+    // Currently no custom behaviour in onPause and onStop. So no overriding.
+    
     /**
      * Ends any existing application session with a Chromecast device.
      */
@@ -313,7 +289,7 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
         if ((mSession != null) && (mSession.hasStarted())) {
             try {
                 if (mSession.hasChannel()) {
-                	// TODO perhaps notify receiever app?
+                	// TODO perhaps notify receiever app that we're disconnecting?
                 }
                 mSession.endSession();
             } catch (IOException e) {
