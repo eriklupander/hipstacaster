@@ -18,7 +18,6 @@ public class TinyPhotoDTO implements Serializable {
     private String description;
     private String ownerName;
 
-    private String thumbnailUrl;
     private String fullsizeUrl;
     private String squareUrl;
 
@@ -35,7 +34,6 @@ public class TinyPhotoDTO implements Serializable {
         this.ownerName = photo.getOwner().getRealName() != null ? photo.getOwner().getRealName() : photo.getOwner().getUsername();
 
         if(photo.getSmallSize() != null) {
-            this.setThumbnailUrl(photo.getThumbnailSize().getSource());
             resolveLargestSize(photo);
             this.setSquareUrl(photo.getSquareSize().getSource());
         }
@@ -96,14 +94,6 @@ public class TinyPhotoDTO implements Serializable {
 
     public void setTitle(String title) {
         this.title = title;
-    }
-
-    public String getThumbnailUrl() {
-        return thumbnailUrl;
-    }
-
-    public void setThumbnailUrl(String thumbnailUrl) {
-        this.thumbnailUrl = thumbnailUrl;
     }
 
     public String getFullsizeUrl() {

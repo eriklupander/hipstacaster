@@ -1,6 +1,5 @@
 package com.squeed.chromecast.hipstacaster.rest;
 
-import com.flickr4java.flickr.galleries.Gallery;
 import com.squeed.chromecast.hipstacaster.controller.FlickrController;
 import com.squeed.chromecast.hipstacaster.dto.TinyPhotoDTO;
 import com.squeed.chromecast.hipstacaster.exception.HipstaException;
@@ -28,6 +27,21 @@ public class RestEndpoint {
     @Autowired
     FlickrController flickrController;
 
+    /**
+     * Search for photos having the specified tag(s). Uses {@link FlickrController} internally, but could
+     * theoretically query more photo services in the distant future.
+     *
+     * @param tags
+     *      One or more comma-separated tags to search for.
+     * @param page
+     *      Page offset, e.g. 0 is first page.
+     * @param perPage
+     *      Number of items to return
+     * @return
+     *      A List of {@TinyPhotoDTO}s. These will contain direct URLs to thumbnail and fullsize versions of the image,
+     *      title, owner etc.
+     * @throws HipstaException
+     */
     @GET
     @Path("/photos/search/{tags}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -36,6 +50,13 @@ public class RestEndpoint {
         return Response.ok(l).build();
     }
 
+    /**
+     * Returns data about a single photo identified by the supplied id.
+     *
+     * @param photoId
+     * @return
+     * @throws HipstaException
+     */
     @GET
     @Path("/photos/{photoId}")
     @Produces(MediaType.APPLICATION_JSON)

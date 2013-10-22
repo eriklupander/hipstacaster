@@ -1,41 +1,40 @@
 <html>
-<link id="favIcon" rel="icon" type="image/png" href="hipstacaster.png"/>
-<title>HipstaCaster</title>
-<link href="css/hipstacaster.css" rel="stylesheet" type="text/css"/>
-<script src="js/jquery/jquery-1.8.3.min.js"></script>
-<script src="https://www.gstatic.com/cast/js/receiver/1.0/cast_receiver.js"></script>
-<script src="js/client.js"></script>
-<script src="js/flickr.js"></script>
-<script src="js/hipstacaster.js"></script>
+<head>
+    <link id="favIcon" rel="icon" type="image/png" href="hipstacaster.png"/>
+    <title>HipstaCaster</title>
+    <link href="css/hipstacaster.css" rel="stylesheet" type="text/css"/>
+    <script src="js/jquery/jquery-1.8.3.min.js"></script>
+    <script src="https://www.gstatic.com/cast/js/receiver/1.0/cast_receiver.js"></script>
+    <script src="js/client.js"></script>
+    <script src="js/viewer.js"></script>
+    <script src="js/hipstacaster.js"></script>
 
-<script type="text/javascript">
+    <script type="text/javascript">
 
-    window.onload = onLoad;
-    window.hipstacaster = {}
+        window.onload = onLoad;
+        window.hipstacaster = {}
 
-    /**
-     * Initializes the receiver application and starts the
-     * receiver.
-     */
-    function onLoad() {
+        /**
+         * Initializes the receiver application and starts the
+         * receiver.
+         */
+        function onLoad() {
+            var favIcon = document.getElementById("favIcon");
 
-        //flickr.demo();
-
-        var chromecastApp = new cast.receiver.Receiver("fc91668a-cf4b-4a18-9611-f2c120d0bf07_1",
-                [ cast.HipstaCaster.PROTOCOL ], "", 5);
-        var favIcon = document.getElementById("favIcon");
+            var chromecastApp = new cast.receiver.Receiver("fc91668a-cf4b-4a18-9611-f2c120d0bf07_1",
+                    [ cast.HipstaCaster.PROTOCOL ], "", 5);
 
 
-        window.hipstacaster = new cast.HipstaCaster();
-        window.hipstacaster.mChannelHandler.addChannelFactory(
-                chromecastApp.createChannelFactory(cast.HipstaCaster.PROTOCOL));
-        chromecastApp.start();
+            window.hipstacaster = new cast.HipstaCaster();
+            window.hipstacaster.mChannelHandler.addChannelFactory(
+                    chromecastApp.createChannelFactory(cast.HipstaCaster.PROTOCOL));
+            chromecastApp.start();
 
-        flickr.init();
-    }
+            viewer.init();
+        }
 
-</script>
-
+    </script>
+</head>
 <body>
 
     <div id="content"></div>

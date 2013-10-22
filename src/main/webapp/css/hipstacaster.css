@@ -1,16 +1,11 @@
 body {
     font-family: Open Sans, Helvetica, Arial, Lucida, sans-serif;
-    text-rendering: optimizelegibility;
     background-color:black;
     text-align:center;
 }
 
 .author-small {
     font-size: 6px;
-}
-
-.photo {
-
 }
 
 .photo_infobox {

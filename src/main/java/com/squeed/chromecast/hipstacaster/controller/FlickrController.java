@@ -40,18 +40,16 @@ public class FlickrController {
     private Flickr f;
 
     private PhotosInterface photoInterface;
-    private GalleriesInterface galleriesInterface;
 
     private static final HashSet<String> extras = new HashSet<>();
     {
         extras.add("url_l");
-        extras.add("url_t");
-        extras.add("url_s");
+        //extras.add("url_t");
         extras.add("url_m");
         extras.add("url_o");
         extras.add("url_sq");
-        extras.add("url_n");
-        extras.add("url_z");
+        //extras.add("url_n");
+        //extras.add("url_z");
         extras.add("owner_name");
         extras.add("description");
     }
@@ -63,7 +61,6 @@ public class FlickrController {
         f = new Flickr(apiKey, sharedSecret, transport);
 
         photoInterface = f.getPhotosInterface();
-        galleriesInterface = f.getGalleriesInterface();
     }
 
 
@@ -96,7 +93,7 @@ public class FlickrController {
     }
 
     private String[] toArray(String tags) {
-        if(tags == null) {
+        if(tags == null || tags.trim().length() == 0) {
             throw new IllegalArgumentException("Cannot convert an empty tags string into an array.");
         }
         if(tags.contains(",")) {
@@ -105,24 +102,16 @@ public class FlickrController {
         return new String[]{tags};
     }
 
-
     private void toTinyPhotoDTOs(List<TinyPhotoDTO> list, PhotoList<Photo> photos) throws FlickrException {
         for(int a = 0; a < photos.size(); a++) {
-            TinyPhotoDTO dto = new TinyPhotoDTO(photos.get(a));
-
-            list.add(dto);
+            list.add(new TinyPhotoDTO(photos.get(a)));
         }
     }
-
-
 
     private void fetchAndApplySizes(String photoId, TinyPhotoDTO dto) throws FlickrException {
         Collection<Size> sizes = photoInterface.getSizes(photoId);
 
         for(Size size : sizes) {
-            if(size.getLabel() == Size.THUMB) {
-                dto.setThumbnailUrl(size.getSource());
-            }
             if(size.getLabel() == Size.SQUARE) {
                 dto.setSquareUrl(size.getSource());
             }

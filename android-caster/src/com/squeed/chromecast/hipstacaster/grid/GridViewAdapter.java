@@ -51,7 +51,7 @@ public class GridViewAdapter extends ArrayAdapter<ImageItem> {
         } else {
             holder = (ViewHolder) row.getTag();
         }
-        ImageItem item = (ImageItem) getItem(position);
+        BitmapImageItem item = (BitmapImageItem) getItem(position);
         holder.imageTitle.setText(item.getTitle());
         holder.image.setImageBitmap(item.getImage());
         holder.title = item.getTitle();
