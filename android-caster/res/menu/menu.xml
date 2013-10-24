@@ -27,13 +27,7 @@ app:showAsAction="always"
         android:id="@+id/action_settings"
         android:title="@string/settings"
         android:icon="@drawable/ic_menu_settings_holo_light"
-        app:showAsAction="always" />    
-
-    <item
-        android:id="@+id/media_route_menu_item"
-        android:title="@string/media_route_menu_title"  
-        app:actionProviderClass="android.support.v7.app.MediaRouteActionProvider"
-		app:showAsAction="always"/>
+        app:showAsAction="always" /> 
     
     <item
         android:id="@+id/action_refresh"
@@ -45,6 +39,12 @@ app:showAsAction="always"
         android:id="@+id/action_slideshow"
         android:title="@string/slideshow"
         android:icon="@drawable/ic_menu_slideshow"
-        app:showAsAction="always" />  
+        app:showAsAction="always" /> 
+        
+     <item
+        android:id="@+id/media_route_menu_item"
+        android:title="@string/media_route_menu_title"  
+        app:actionProviderClass="android.support.v7.app.MediaRouteActionProvider"
+		app:showAsAction="always"/>
 
 </menu>
