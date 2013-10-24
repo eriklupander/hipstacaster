@@ -30,10 +30,8 @@ public class PhotoDTO implements Serializable {
         this.id = photo.getId();
         this.ownerName = photo.getOwner().getRealName() != null ? photo.getOwner().getRealName() : photo.getOwner().getUsername();
 
-        if(photo.getSmallSize() != null) {
-            resolveLargestSize(photo);
-            this.setSquareUrl(photo.getSquareSize().getSource());
-        }
+        resolveLargestSize(photo);
+        this.setSquareUrl(photo.getSquareSize().getSource());
     }
 
     private void resolveLargestSize(Photo photo) {

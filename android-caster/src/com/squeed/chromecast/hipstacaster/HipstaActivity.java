@@ -89,6 +89,7 @@ public class HipstaActivity extends ActionBarActivity implements MediaRouteAdapt
     private boolean allowLoading = false;
     private boolean isLoadingMore = false;
     private int index = 0;
+    
     /** Set when an image is clicked, can be use to supply start index of slideshow */
     private int offset = 0;
     private int pageOffset = 0;

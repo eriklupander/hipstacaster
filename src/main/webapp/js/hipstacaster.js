@@ -75,9 +75,9 @@ var cast = window.cast || {};
 
             var message = event.message;
             if (message.command == 'viewphoto') {
-                flickr.viewPhoto(message);
+                viewer.viewPhoto(message);
             } else if (message.command == 'slideshow') {
-                flickr.startSlideshow(message);
+                viewer.startSlideshow(message);
             }
         },
 
